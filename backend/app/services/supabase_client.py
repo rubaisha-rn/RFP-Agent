@@ -41,6 +41,17 @@ class SupabaseService:
             
         self.client.table("agent_traces").insert(data).execute()
 
+    def list_traces(self, job_id: str) -> list[dict]:
+        """Return all agent_traces rows for a given job, ordered by step_number."""
+        result = (
+            self.client.table("agent_traces")
+            .select("*")
+            .eq("job_id", job_id)
+            .order("step_number")
+            .execute()
+        )
+        return result.data
+
     def list_vendors(self, category: str = None) -> list[dict]:
         # Excludes blacklisted vendors automatically
         query = self.client.table("vendors").select("*").neq("blacklisted", True)
