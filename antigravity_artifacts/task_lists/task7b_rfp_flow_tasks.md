@@ -1,0 +1,21 @@
+# Tasks - RFP Generation Flow
+
+- [x] Part A: Models (mobile/lib/models/)
+  - [x] Update `job_status.dart` with new fields and getters
+  - [x] Create `vendor.dart`
+  - [x] Create `rfp_result.dart` with nested parsing & robust trace extraction
+- [x] Part B: Services (mobile/lib/services/)
+  - [x] Implement all operations in `rfp_service.dart` (generation, status watch, results, contacts)
+- [x] Part C: Screens (mobile/lib/screens/rfp/)
+  - [x] Create `brief_input_screen.dart`
+  - [x] Create `progress_screen.dart`
+  - [x] Create `preview_screen.dart`
+  - [x] Create `contacts_select_screen.dart`
+  - [x] Create `confirm_send_screen.dart`
+  - [x] Create `success_screen.dart`
+- [x] Part D: Routing & Guard updates (mobile/lib/app.dart)
+  - [x] Map all routes and path parameters in `GoRouter` configuration
+- [x] Part E: Verification & Polish
+  - [x] Run full user flow test from brief submission to success screen
+  - [x] Verify beautiful responsive layout and interactive elements
+  - [x] Capture and save proof screenshots

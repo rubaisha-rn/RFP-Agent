@@ -5,6 +5,13 @@ import 'core/theme.dart';
 import 'screens/splash_screen.dart';
 import 'screens/onboarding/signup_screen.dart';
 import 'screens/onboarding/account_setup_screen.dart';
+import 'screens/rfp/brief_input_screen.dart';
+import 'screens/rfp/progress_screen.dart';
+import 'screens/rfp/preview_screen.dart';
+import 'screens/rfp/contacts_select_screen.dart';
+import 'screens/rfp/confirm_send_screen.dart';
+import 'screens/rfp/success_screen.dart';
+import 'models/vendor.dart';
 import 'services/auth_service.dart';
 
 class RfpAgentApp extends ConsumerWidget {
@@ -12,8 +19,28 @@ class RfpAgentApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Dynamic redirect guard based on Auth Status
     final router = GoRouter(
       initialLocation: '/',
+      redirect: (context, state) {
+        final org = ref.watch(authProvider);
+        final loc = state.matchedLocation;
+        final isSplash = loc == '/';
+        final isAuth = loc == '/signup' || loc == '/login';
+
+        if (org == null) {
+          // If not logged in and not on splash or auth pages, redirect to signup
+          if (!isSplash && !isAuth) {
+            return '/signup';
+          }
+        } else {
+          // If logged in and on splash or auth pages, skip directly to dashboard
+          if (isSplash || isAuth) {
+            return '/rfp/new';
+          }
+        }
+        return null;
+      },
       routes: [
         GoRoute(
           path: '/',
@@ -33,110 +60,42 @@ class RfpAgentApp extends ConsumerWidget {
         ),
         GoRoute(
           path: '/rfp/new',
-          builder: (context, state) => Scaffold(
-            appBar: AppBar(
-              title: const Text(
-                'RFP Generator Dashboard',
-                style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
-              ),
-              actions: [
-                Consumer(
-                  builder: (context, ref, _) => IconButton(
-                    icon: const Icon(Icons.logout, color: AppTheme.primaryColor),
-                    onPressed: () async {
-                      await ref.read(authProvider.notifier).logout();
-                      context.go('/');
-                    },
-                  ),
-                ),
-                const SizedBox(width: 12),
-              ],
-            ),
-            body: Center(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24.0),
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 600),
-                  padding: const EdgeInsets.all(40),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 24,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                    border: Border.all(color: const Color(0xFFE5E7EB)),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withOpacity(0.1),
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.auto_awesome,
-                          size: 64,
-                          color: AppTheme.primaryColor,
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'RFP Generation',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF111827),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'RFP input screen — coming in Task 7B',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Color(0xFF6B7280),
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 32),
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.logout),
-                        label: const Text('Log out'),
-                        onPressed: () async {
-                          await ref.read(authProvider.notifier).logout();
-                          context.go('/');
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red[50],
-                          foregroundColor: Colors.red[700],
-                          elevation: 0,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ),
+          builder: (context, state) => const BriefInputScreen(),
         ),
         GoRoute(
           path: '/rfp/progress/:jobId',
           builder: (context, state) {
             final jobId = state.pathParameters['jobId'] ?? '';
-            return Scaffold(
-              body: Center(
-                child: Text('RFP generation progress for job $jobId — coming in Task 7B'),
-              ),
-            );
+            return ProgressScreen(jobId: jobId);
+          },
+        ),
+        GoRoute(
+          path: '/rfp/preview/:jobId',
+          builder: (context, state) {
+            final jobId = state.pathParameters['jobId'] ?? '';
+            return PreviewScreen(jobId: jobId);
+          },
+        ),
+        GoRoute(
+          path: '/rfp/contacts/:jobId',
+          builder: (context, state) {
+            final jobId = state.pathParameters['jobId'] ?? '';
+            return ContactsSelectScreen(jobId: jobId);
+          },
+        ),
+        GoRoute(
+          path: '/rfp/confirm/:jobId',
+          builder: (context, state) {
+            final jobId = state.pathParameters['jobId'] ?? '';
+            final selectedVendors = state.extra as List<Vendor>? ?? [];
+            return ConfirmSendScreen(jobId: jobId, selectedVendors: selectedVendors);
+          },
+        ),
+        GoRoute(
+          path: '/rfp/success/:jobId',
+          builder: (context, state) {
+            final jobId = state.pathParameters['jobId'] ?? '';
+            return SuccessScreen(jobId: jobId);
           },
         ),
         GoRoute(
@@ -145,7 +104,7 @@ class RfpAgentApp extends ConsumerWidget {
             final jobId = state.pathParameters['jobId'] ?? '';
             return Scaffold(
               body: Center(
-                child: Text('RFP result for job $jobId — coming in Task 7B'),
+                child: Text('RFP result dashboard for job $jobId — coming in Task 7C'),
               ),
             );
           },
@@ -153,11 +112,13 @@ class RfpAgentApp extends ConsumerWidget {
       ],
     );
 
-    return MaterialApp.router(
-      title: 'RFP Agent',
-      theme: AppTheme.lightTheme,
-      routerConfig: router,
-      debugShowCheckedModeBanner: false,
+    return ProviderScope(
+      child: MaterialApp.router(
+        title: 'RFP Agent',
+        theme: AppTheme.lightTheme,
+        routerConfig: router,
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }
