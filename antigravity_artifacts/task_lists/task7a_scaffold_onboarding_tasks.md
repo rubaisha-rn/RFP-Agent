@@ -1,0 +1,25 @@
+# Task Checklist - Task 7A: Scaffold Flutter App & Onboarding (Auth) Flow
+
+- [x] Initialize the Flutter project in `mobile/`
+- [x] Configure `pubspec.yaml` with the proper dependencies
+- [x] Run `flutter pub get` and verify dependency installation
+- [x] Build baseline Directory Layout:
+  - [x] lib/main.dart
+  - [x] lib/app.dart
+  - [x] lib/core/constants.dart
+  - [x] lib/core/theme.dart
+  - [x] lib/core/api_client.dart
+  - [x] lib/models/organization.dart
+  - [x] lib/models/rfp_brief.dart
+  - [x] lib/models/job_status.dart
+  - [x] lib/services/auth_service.dart
+  - [x] lib/services/rfp_service.dart
+  - [x] lib/widgets/primary_button.dart
+  - [x] lib/widgets/labeled_field.dart
+  - [x] lib/screens/splash_screen.dart
+  - [x] lib/screens/onboarding/signup_screen.dart
+  - [x] lib/screens/onboarding/account_setup_screen.dart
+- [x] Wire routing in `lib/app.dart` using GoRouter
+- [x] Wire root app inside Riverpod `ProviderScope` in `lib/main.dart`
+- [x] Run the app in Chrome via browser tools or locally to verify the full flow (Splash -> Signup -> Account Setup -> Placeholder)
+- [x] Verify that a real API call successfully saves an organization record in the backend database
