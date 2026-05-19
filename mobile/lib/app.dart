@@ -11,6 +11,7 @@ import 'screens/rfp/preview_screen.dart';
 import 'screens/rfp/contacts_select_screen.dart';
 import 'screens/rfp/confirm_send_screen.dart';
 import 'screens/rfp/success_screen.dart';
+import 'screens/rfp/result_dashboard_screen.dart';
 import 'models/vendor.dart';
 import 'services/auth_service.dart';
 
@@ -102,11 +103,7 @@ class RfpAgentApp extends ConsumerWidget {
           path: '/rfp/result/:jobId',
           builder: (context, state) {
             final jobId = state.pathParameters['jobId'] ?? '';
-            return Scaffold(
-              body: Center(
-                child: Text('RFP result dashboard for job $jobId — coming in Task 7C'),
-              ),
-            );
+            return ResultDashboardScreen(jobId: jobId);
           },
         ),
       ],
