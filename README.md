@@ -13,7 +13,7 @@
 | 🌐 Live Web App (Netlify) | https://rfp-agent-system.netlify.app |
 | ⚙️ Live Backend API (Swagger) | https://rfp-agent-system-production.up.railway.app/docs |
 | 📦 Source Code (GitHub) | https://github.com/dina-khan/rfp-agent-system |
-| 📱 Android APK | `releases/rfp_agent_app.apk` (in this repo) |
+| 📱 Android APK | [`releases/rfp_agent_system.apk`](https://github.com/dina-khan/rfp-agent-system/releases/tag/v1.0.0) (in this repo) |
 | 🎥 Demo Video (3-5 min) | _(YouTube link added in submission form)_ |
 | 🤖 Antigravity Usage Video | _(YouTube link added in submission form)_ |
 | 📁 Antigravity Build Artifacts | `antigravity_artifacts/` |
@@ -51,7 +51,7 @@ The easiest way to test the system is to use our live web application.
 
 ### 📱 Android APK
 You can also run the app natively on any Android device.
-1. Download `releases/rfp_agent_app.apk` from this repository.
+1. Download [`releases/rfp_agent_system.apk`](https://github.com/dina-khan/rfp-agent-system/releases/tag/v1.0.0) from this repository.
 2. Transfer it to your Android device and install it (you may need to allow "Install from Unknown Sources").
 3. Launch **RFP Agent** and follow the same steps to generate your RFP.
 
@@ -91,6 +91,38 @@ Execute the two SQL files located in `backend/supabase/migrations/` in your Supa
 python -m uvicorn app.main:app --reload --port 8000
 ```
 Swagger API docs will be available at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+---
+
+
+## 📱 Android Emulator / APK Connection (Local Backend)
+
+If you are running the Android emulator or APK locally, you must forward the backend port so the app can communicate with your FastAPI server.
+
+### ⚙️ Step 1: Start Backend
+
+Make sure backend is running:
+
+```bash
+python -m uvicorn app.main:app --reload --port 8000
+```
+
+### 📲 Step 2: Connect Emulator / Device to Backend
+
+Run these in a new terminal:
+
+```bash
+$env:Path += ";$HOME\AppData\Local\Android\Sdk\platform-tools"
+adb reverse tcp:8000 tcp:8000
+```
+
+### 🚀 Step 4: Run the App
+
+Now launch the emulator or install the APK.
+
+The app will successfully connect to:
+
+http://localhost:8000
 
 ---
 
