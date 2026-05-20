@@ -16,7 +16,7 @@
 | 📱 Android APK | `releases/rfp_agent_app.apk` (in this repo) |
 | 🎥 Demo Video (3-5 min) | _(YouTube link added in submission form)_ |
 | 🤖 Antigravity Usage Video (2-3 min) | _(YouTube link added in submission form)_ |
-| 📁 Antigravity Build Artifacts | `antigravity_artifacts/` (45+ files) |
+| 📁 Antigravity Build Artifacts | `antigravity_artifacts/`  |
 
 ---
 
