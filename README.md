@@ -116,7 +116,7 @@ $env:Path += ";$HOME\AppData\Local\Android\Sdk\platform-tools"
 adb reverse tcp:8000 tcp:8000
 ```
 
-### 🚀 Step 4: Run the App
+### 🚀 Step 3: Run the App
 
 Now launch the emulator or install the APK.
 
