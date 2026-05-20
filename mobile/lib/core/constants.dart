@@ -1,3 +1,3 @@
 class ApiConstants {
-  static const String baseUrl = 'https://rfp-agent-system-production.up.railway.app';
+  static const String baseUrl = 'http://localhost:8000';
 }
