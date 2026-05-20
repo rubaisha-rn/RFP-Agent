@@ -1,4 +1,4 @@
-import 'dart:html' as html; // Used for opening new browser tab on web target
+import '../../utils/platform_utils.dart';
 import 'package:flutter/foundation.dart'; // For kIsWeb check
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -66,7 +66,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen> {
     print('[ResultDashboardScreen] Opening download URL: $downloadUrl');
 
     if (kIsWeb) {
-      html.window.open(downloadUrl, '_blank');
+      openInBrowser(downloadUrl);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Download URL: $downloadUrl (only open tab on web)')),
@@ -399,7 +399,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen> {
                                     padding: EdgeInsets.zero,
                                     constraints: const BoxConstraints(),
                                     onPressed: () {
-                                      html.window.navigator.clipboard?.writeText(refIdStr);
+                                      copyToClipboard(refIdStr);
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         const SnackBar(content: Text('Reference ID copied to clipboard!')),
                                       );
@@ -1018,7 +1018,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen> {
                                   const SizedBox(height: 6),
                                   InkWell(
                                     onTap: () {
-                                      html.window.open(portalPosting.postedUrl, '_blank');
+                                      openInBrowser(portalPosting.postedUrl);
                                     },
                                     child: Row(
                                       children: [

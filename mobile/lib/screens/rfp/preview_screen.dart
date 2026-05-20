@@ -1,4 +1,4 @@
-import 'dart:html' as html; // Used for opening new browser tab on web target
+import '../../utils/platform_utils.dart';
 import 'package:flutter/foundation.dart'; // For kIsWeb check
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -63,7 +63,7 @@ class _PreviewScreenState extends ConsumerState<PreviewScreen> {
       // Since this hackathon is compiled and tested on Google Chrome Web, 
       // we utilize dart:html's window.open to guarantee opening the PDF 
       // in a clean, new browser tab without external package dependency issues.
-      html.window.open(downloadUrl, '_blank');
+      openInBrowser(downloadUrl);
     } else {
       // In a multi-platform environment, we would use url_launcher:
       // launchUrl(Uri.parse(downloadUrl));
