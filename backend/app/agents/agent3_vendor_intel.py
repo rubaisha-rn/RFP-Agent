@@ -61,6 +61,9 @@ _JSON_INSTRUCTION = """
 CRITICAL OUTPUT RULE:
 You MUST output ONLY valid JSON matching the VendorRankingOutput schema below.
 No prose, no markdown fences, no explanation — just the raw JSON object.
+Do NOT write any thinking, explanation, or conversational text outside the JSON object.
+Perform all your reasoning and explanation INSIDE the "reasoning_notes" field of the JSON object.
+The very first character of your response MUST be '{'.
 
 Schema:
 {
@@ -90,32 +93,29 @@ Schema:
 # ---------------------------------------------------------------------------
 # 6. Define the ADK Agent
 # ---------------------------------------------------------------------------
-_USE_OUTPUT_SCHEMA = True
+_USE_OUTPUT_SCHEMA = False
 
-try:
-    vendor_intel_agent = Agent(
-        name="vendor_intel",
-        model="gemini-2.5-flash",
-        description=(
-            "Identifies, qualifies, scores, and ranks vendors for an RFP."
-        ),
-        instruction=VENDOR_INTEL_PROMPT,
-        output_schema=VendorRankingOutput,
-        output_key="vendor_intel",
-        tools=[query_vendors, run_conflict_check, predict_bid_range],
-    )
-except (ValueError, TypeError) as _adk_err:
-    _USE_OUTPUT_SCHEMA = False
-    vendor_intel_agent = Agent(
-        name="vendor_intel",
-        model="gemini-2.5-flash",
-        description=(
-            "Identifies, qualifies, scores, and ranks vendors for an RFP."
-        ),
-        instruction=VENDOR_INTEL_PROMPT + _JSON_INSTRUCTION,
-        output_key="vendor_intel",
-        tools=[query_vendors, run_conflict_check, predict_bid_range],
-    )
+from google.adk.models import Gemini
+
+vendor_intel_agent = Agent(
+    name="vendor_intel",
+    model=Gemini(
+        model=settings.model_vendor_intel,
+        retry_options=types.HttpRetryOptions(
+            attempts=6,
+            initial_delay=3.0,
+            max_delay=60.0,
+            http_status_codes=[408, 429, 500, 503, 504]
+        )
+    ),
+    description=(
+        "Identifies, qualifies, scores, and ranks vendors for an RFP."
+    ),
+    instruction=VENDOR_INTEL_PROMPT + _JSON_INSTRUCTION,
+    output_key="vendor_intel",
+    tools=[query_vendors, run_conflict_check, predict_bid_range],
+    generate_content_config=types.GenerateContentConfig(temperature=0.0),
+)
 
 # ---------------------------------------------------------------------------
 # 7. Module-level Runner
@@ -253,10 +253,11 @@ async def rank_vendors(job_id: str, classification: dict, compliance: dict) -> V
             vendor_intel = state_val
         elif final_response_text:
             clean_text = final_response_text.strip()
-            if clean_text.startswith("```"):
-                lines = clean_text.splitlines()
-                inner = [l for l in lines[1:] if l.strip() != "```"]
-                clean_text = "\n".join(inner)
+            # Robust JSON extraction to handle conversational prefix/suffix and markdown fences
+            first_brace = clean_text.find("{")
+            last_brace = clean_text.rfind("}")
+            if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+                clean_text = clean_text[first_brace:last_brace + 1]
             vendor_intel = VendorRankingOutput.model_validate_json(clean_text)
         else:
             raise ValueError(

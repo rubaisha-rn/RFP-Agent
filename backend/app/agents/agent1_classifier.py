@@ -33,6 +33,7 @@ os.environ.setdefault("GOOGLE_API_KEY", settings.google_api_key)
 from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
+from google.adk.models import Gemini
 from google.genai import types
 
 # ---------------------------------------------------------------------------
@@ -52,11 +53,20 @@ CLASSIFIER_PROMPT: str = _PROMPT_PATH.read_text(encoding="utf-8")
 # ---------------------------------------------------------------------------
 classifier_agent = Agent(
     name="requirements_classifier",
-    model="gemini-2.5-flash",          # fast + cheap; classification is bounded
+    model=Gemini(
+        model=settings.model_classifier,
+        retry_options=types.HttpRetryOptions(
+            attempts=6,
+            initial_delay=3.0,
+            max_delay=60.0,
+            http_status_codes=[408, 429, 500, 503, 504]
+        )
+    ),
     description="Parses a procurement brief into a structured PPRA-aligned classification.",
     instruction=CLASSIFIER_PROMPT,
     output_schema=ClassificationOutput,
     output_key="classification",        # downstream agents read state["classification"]
+    generate_content_config=types.GenerateContentConfig(temperature=0.0),
 )
 
 # ---------------------------------------------------------------------------

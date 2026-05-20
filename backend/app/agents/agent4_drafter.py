@@ -66,6 +66,9 @@ _JSON_INSTRUCTION = """
 CRITICAL OUTPUT RULE:
 You MUST output ONLY valid JSON matching the FinalRFPOutput schema.
 No prose, no markdown fences, no explanation — just the raw JSON object.
+Do NOT write any thinking, explanation, or conversational text outside the JSON object.
+Perform all your reasoning and explanation INSIDE the "reasoning_notes" field of the JSON object.
+The very first character of your response MUST be '{'.
 
 Schema:
 {
@@ -108,15 +111,27 @@ Schema:
 # ---------------------------------------------------------------------------
 _USE_OUTPUT_SCHEMA = False
 
+from google.adk.models import Gemini
+
 drafter_agent = Agent(
     name="drafter",
-    model="gemini-2.5-flash",
+    model=Gemini(
+        model=settings.model_drafter,
+        retry_options=types.HttpRetryOptions(
+            attempts=10,
+            initial_delay=4.0,
+            max_delay=60.0,
+            exp_base=1.5,
+            http_status_codes=[408, 429, 500, 503, 504]
+        )
+    ),
     description=(
         "Synthesizes the RFP and executes actions to post it and notify vendors."
     ),
     instruction=DRAFTER_PROMPT + _JSON_INSTRUCTION,
     output_key="final_rfp_output",
     tools=[generate_rfp_pdf, save_document_record, send_invitation_email, create_calendar_event, post_to_portal],
+    generate_content_config=types.GenerateContentConfig(temperature=0.0),
 )
 
 # ---------------------------------------------------------------------------
@@ -273,10 +288,11 @@ async def draft_and_execute(
             final_output = state_val
         elif final_response_text:
             clean_text = final_response_text.strip()
-            if clean_text.startswith("```"):
-                lines = clean_text.splitlines()
-                inner = [l for l in lines[1:] if l.strip() != "```"]
-                clean_text = "\n".join(inner)
+            # Robust JSON extraction to handle conversational prefix/suffix and markdown fences
+            first_brace = clean_text.find("{")
+            last_brace = clean_text.rfind("}")
+            if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+                clean_text = clean_text[first_brace:last_brace + 1]
             final_output = FinalRFPOutput.model_validate_json(clean_text)
         else:
             raise ValueError(
@@ -349,7 +365,7 @@ if __name__ == "__main__":
                 break
             except Exception as exc:
                 if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
-                    print(f"  [Rate Limit] Caught 429 in Agent 1. Sleeping 65s before retry {attempt+1}/5...")
+                    print(f"  [Rate Limit] Caught 429 in Agent 1: {exc}. Sleeping 65s before retry {attempt+1}/5...")
                     await asyncio.sleep(65)
                 else:
                     print(f"[ERROR] classify_brief raised: {exc}", file=sys.stderr)
@@ -371,7 +387,7 @@ if __name__ == "__main__":
                 break
             except Exception as exc:
                 if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
-                    print(f"  [Rate Limit] Caught 429 in Agent 2. Sleeping 65s before retry {attempt+1}/5...")
+                    print(f"  [Rate Limit] Caught 429 in Agent 2: {exc}. Sleeping 65s before retry {attempt+1}/5...")
                     await asyncio.sleep(65)
                 else:
                     print(f"[ERROR] audit_classification raised: {exc}", file=sys.stderr)
@@ -393,7 +409,7 @@ if __name__ == "__main__":
                 break
             except Exception as exc:
                 if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
-                    print(f"  [Rate Limit] Caught 429 in Agent 3. Sleeping 65s before retry {attempt+1}/5...")
+                    print(f"  [Rate Limit] Caught 429 in Agent 3: {exc}. Sleeping 65s before retry {attempt+1}/5...")
                     await asyncio.sleep(65)
                 else:
                     print(f"[ERROR] rank_vendors raised: {exc}", file=sys.stderr)
@@ -419,7 +435,7 @@ if __name__ == "__main__":
                 break
             except Exception as exc:
                 if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
-                    print(f"  [Rate Limit] Caught 429 in Agent 4. Sleeping 65s before retry {attempt+1}/5...")
+                    print(f"  [Rate Limit] Caught 429 in Agent 4: {exc}. Sleeping 65s before retry {attempt+1}/5...")
                     await asyncio.sleep(65)
                 else:
                     print(f"[ERROR] draft_and_execute raised: {exc}", file=sys.stderr)

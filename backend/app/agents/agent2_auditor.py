@@ -66,6 +66,9 @@ _JSON_INSTRUCTION = """
 CRITICAL OUTPUT RULE:
 You MUST output ONLY valid JSON matching the ComplianceOutput schema below.
 No prose, no markdown fences, no explanation — just the raw JSON object.
+Do NOT write any thinking, explanation, or conversational text outside the JSON object.
+Perform all your reasoning and explanation INSIDE the "reasoning_notes" field of the JSON object.
+The very first character of your response MUST be '{'.
 
 Schema:
 {
@@ -90,35 +93,30 @@ Schema:
 #    Try with output_schema first; fall back to manual JSON parsing if ADK
 #    raises a ValueError about the schema+tools combination.
 # ---------------------------------------------------------------------------
-_USE_OUTPUT_SCHEMA = True  # toggled to False if ADK rejects the combination
+_USE_OUTPUT_SCHEMA = False
 
-try:
-    auditor_agent = Agent(
-        name="compliance_auditor",
-        model="gemini-2.5-flash",
-        description=(
-            "Audits a procurement classification against PPRA Rules 2004 "
-            "and produces a compliance scorecard."
-        ),
-        instruction=AUDITOR_PROMPT,
-        output_schema=ComplianceOutput,
-        output_key="compliance",
-        tools=[lookup_ppra_rules],
-    )
-except (ValueError, TypeError) as _adk_err:
-    # ADK does not allow output_schema + tools together in this version.
-    _USE_OUTPUT_SCHEMA = False
-    auditor_agent = Agent(
-        name="compliance_auditor",
-        model="gemini-2.5-flash",
-        description=(
-            "Audits a procurement classification against PPRA Rules 2004 "
-            "and produces a compliance scorecard."
-        ),
-        instruction=AUDITOR_PROMPT + _JSON_INSTRUCTION,
-        output_key="compliance",
-        tools=[lookup_ppra_rules],
-    )
+from google.adk.models import Gemini
+
+auditor_agent = Agent(
+    name="compliance_auditor",
+    model=Gemini(
+        model=settings.model_auditor,
+        retry_options=types.HttpRetryOptions(
+            attempts=6,
+            initial_delay=3.0,
+            max_delay=60.0,
+            http_status_codes=[408, 429, 500, 503, 504]
+        )
+    ),
+    description=(
+        "Audits a procurement classification against PPRA Rules 2004 "
+        "and produces a compliance scorecard."
+    ),
+    instruction=AUDITOR_PROMPT + _JSON_INSTRUCTION,
+    output_key="compliance",
+    tools=[lookup_ppra_rules],
+    generate_content_config=types.GenerateContentConfig(temperature=0.0),
+)
 
 # ---------------------------------------------------------------------------
 # 7. Module-level Runner (shared across calls; each call gets its own session)
@@ -255,13 +253,12 @@ async def audit_classification(job_id: str, classification: dict) -> ComplianceO
         elif isinstance(state_val, ComplianceOutput):
             compliance = state_val
         elif final_response_text:
-            # Strip potential markdown fences the model may have added
             clean_text = final_response_text.strip()
-            if clean_text.startswith("```"):
-                lines = clean_text.splitlines()
-                # drop first (```json) and last (```) fence lines
-                inner = [l for l in lines[1:] if l.strip() != "```"]
-                clean_text = "\n".join(inner)
+            # Robust JSON extraction to handle conversational prefix/suffix and markdown fences
+            first_brace = clean_text.find("{")
+            last_brace = clean_text.rfind("}")
+            if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
+                clean_text = clean_text[first_brace:last_brace + 1]
             compliance = ComplianceOutput.model_validate_json(clean_text)
         else:
             raise ValueError(
@@ -269,6 +266,10 @@ async def audit_classification(job_id: str, classification: dict) -> ComplianceO
             )
 
     except Exception as exc:
+        import sys
+        print(f"[DEBUG] final_response_text: {repr(final_response_text)}", file=sys.stderr)
+        if 'clean_text' in locals():
+            print(f"[DEBUG] clean_text: {repr(clean_text)}", file=sys.stderr)
         supabase_service.write_trace(
             job_id=job_id,
             agent_name="auditor",
