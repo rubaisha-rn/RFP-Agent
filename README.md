@@ -14,7 +14,7 @@
 | ⚙️ Live Backend API (Swagger) | https://rfp-agent-system-production.up.railway.app/docs |
 | 📦 Source Code (GitHub) | https://github.com/dina-khan/rfp-agent-system |
 | 📱 Android APK | 📱 Android APK [Download v1.0.0 release](https://github.com/dina-khan/rfp-agent-system/releases/tag/v1.0.0) |
-| 🎥 Demo Video (3-5 min) | [_(YouTube link added in submission form)_](https://drive.google.com/file/d/1puNylBzz8V34rTmtBmM9USeBVLSTenG5/view) |
+| 🎥 Demo Video (3-5 min) | (https://drive.google.com/file/d/1puNylBzz8V34rTmtBmM9USeBVLSTenG5/view) |
 | 🤖 Antigravity Usage Video | (https://drive.google.com/file/d/1U5-3ag_L_e50FqCmb0HoIpDwSlFaoNd_/view?usp=sharing) |
 | 📁 Antigravity Build Artifacts | `antigravity_artifacts/` |
 
