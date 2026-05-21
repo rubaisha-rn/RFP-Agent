@@ -7,7 +7,7 @@ All evidence of Antigravity's workflow is persisted in the `antigravity_artifact
 - **Workplans**: Strategic breakdown of implementation steps.
 - **Reasoning Traces**: Insights into Antigravity's autonomous decisions.
 - **Task Lists**: Granular, checklist-driven progress logs.
-- **Walkthroughs**: Narrative logs with `.webp` screen recordings of the agent interacting with the app.
+- **Walkthroughs**: Narrative logs with screenshots of the agent interacting with the app.
 - **Screenshots**: Over 50 visual checkpoints capturing IDE state, terminal output, and UI progression.
 
 ## 🛠️ Build Phases - Task-by-Task Breakdown
@@ -43,7 +43,7 @@ All evidence of Antigravity's workflow is persisted in the `antigravity_artifact
 
 ### Task 7A — Flutter Scaffold + Onboarding
 - **Goal**: Initialize the mobile and web frontend.
-- **Outcome**: Built authentication flows. **Autonomous behavior**: Antigravity used its **built-in browser tool** to drive a Chrome instance, identified a regex bug in email sub-addressing, fixed it, and captured a `.webp` recording.
+- **Outcome**: Built authentication flows. **Autonomous behavior**: Antigravity used its **built-in browser tool** to drive a Chrome instance, identified a regex bug in email sub-addressing, fixed it, and captured screenshots.
 
 ### Task 7B & 7C — RFP Flow & Results Dashboard
 - **Goal**: Build the core UI, progress polling, and audit trail dashboard.
