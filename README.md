@@ -13,9 +13,9 @@
 | 🌐 Live Web App (Netlify) | https://rfp-agent-system.netlify.app |
 | ⚙️ Live Backend API (Swagger) | https://rfp-agent-system-production.up.railway.app/docs |
 | 📦 Source Code (GitHub) | https://github.com/dina-khan/rfp-agent-system |
-| 📱 Android APK | [`releases/rfp_agent_system.apk`](https://github.com/dina-khan/rfp-agent-system/releases/tag/v1.0.0) (in this repo) |
-| 🎥 Demo Video (3-5 min) | _(YouTube link added in submission form)_ |
-| 🤖 Antigravity Usage Video | _(YouTube link added in submission form)_ |
+| 📱 Android APK | | 📱 Android APK | [Download v1.0.0 release](https://github.com/dina-khan/rfp-agent-system/releases/tag/v1.0.0) | |
+| 🎥 Demo Video (3-5 min) | [_(YouTube link added in submission form)_](https://drive.google.com/file/d/1puNylBzz8V34rTmtBmM9USeBVLSTenG5/view) |
+| 🤖 Antigravity Usage Video | (https://drive.google.com/file/d/1U5-3ag_L_e50FqCmb0HoIpDwSlFaoNd_/view?usp=sharing) |
 | 📁 Antigravity Build Artifacts | `antigravity_artifacts/` |
 
 ---
@@ -191,7 +191,7 @@ The entire project was built inside Google Antigravity IDE. The `antigravity_art
 **Strongest autonomous behaviour examples:**
 1. **3-cycle autonomous debug of the Compliance Auditor** (Task 4) — Antigravity diagnosed the ADK `output_schema + tools` constraint, patched, re-tested, all without re-prompting. The same lesson was then reused autonomously in the Drafter task.
 2. **Autonomous port-conflict resolution** during Task 7C — Antigravity ran a series of PowerShell diagnostic commands (`Get-NetTCPConnection`, `Get-Process`, `Stop-Process -Id 32932 -Force`) to free port 5000 from a stale Flutter process before continuing.
-3. **Browser-driven self-verification** (Task 7A) — Antigravity drove a real Chrome browser through the onboarding flow, found a regex bug it had written for email sub-addressing, fixed it, and produced a `.webp` screen recording of the session as an artifact.
+3. **Browser-driven self-verification** (Task 7A) — Antigravity drove a real Chrome browser through the onboarding flow, found a regex bug it had written for email sub-addressing, fixed it autonomously, and captured screenshots of the verification..
 
 ### Agentic Reasoning & Workflow (20%)
 - 4 distinct ADK agents with structured Pydantic schemas, deterministic tool ordering, and per-event trace persistence (one row per `function_call` + `function_response`).
