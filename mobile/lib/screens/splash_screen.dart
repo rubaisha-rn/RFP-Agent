@@ -42,19 +42,13 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
     await Future.delayed(const Duration(milliseconds: 1800));
     if (!mounted) return;
 
-    final vendorOrg = ref.read(vendorAuthProvider);
-    final currentLoc = GoRouterState.of(context).uri.toString();
-
-    if (currentLoc.startsWith('/vendor') || vendorOrg != null) {
-      if (vendorOrg != null) {
-        context.go('/vendor/inbox/${vendorOrg.id}');
-      }
-      return;
-    }
-
     final org = ref.read(authProvider);
+    final vendorOrg = ref.read(vendorAuthProvider);
+
     if (org != null) {
       context.go('/rfp/new');
+    } else if (vendorOrg != null) {
+      context.go('/vendor/inbox/${vendorOrg.id}');
     } else {
       context.go('/signup');
     }

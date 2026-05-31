@@ -1,3 +1,4 @@
+// DEPRECATED: Use SignupScreen with initialRole: UserRole.vendor instead.
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
