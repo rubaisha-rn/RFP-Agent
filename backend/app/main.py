@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, rfp, contacts, documents
+from app.api import auth, rfp, contacts, documents, vendor
 
 
 @asynccontextmanager
@@ -33,6 +33,7 @@ app.include_router(auth.router, prefix="/auth", tags=["auth"])
 app.include_router(rfp.router, prefix="/rfp", tags=["rfp"])
 app.include_router(contacts.router, prefix="/contacts", tags=["contacts"])
 app.include_router(documents.router, prefix="/documents", tags=["documents"])
+app.include_router(vendor.router, prefix="/vendor", tags=["vendor"])
 
 
 @app.get("/health")

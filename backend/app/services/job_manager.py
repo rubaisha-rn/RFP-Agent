@@ -55,11 +55,18 @@ def get_job_full(job_id: str) -> dict:
     document = docs_res.data[-1] if docs_res.data else None
     portal_posting = portal_res.data[0] if portal_res.data else None
     
+    responses_res = supabase_service.client.table("vendor_responses") \
+        .select("*, vendors(name, email)") \
+        .eq("job_id", job_id) \
+        .order("submitted_at", desc=True) \
+        .execute()
+    
     return {
         "job": job,
         "traces": traces,
         "document": document,
         "emails": emails_res.data,
         "calendar_events": events_res.data,
-        "portal_posting": portal_posting
+        "portal_posting": portal_posting,
+        "vendor_responses": responses_res.data
     }
