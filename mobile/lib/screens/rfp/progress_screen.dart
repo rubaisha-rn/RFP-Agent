@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../models/job_status.dart';
 import '../../services/rfp_service.dart';
+import '../../widgets/shared_ui.dart';
 
 class ProgressScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -35,22 +36,17 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     _subscription?.cancel();
     _subscription = ref.read(rfpServiceProvider).watchJobStatus(widget.jobId).listen(
       (status) {
-        setState(() {
-          _currentStatus = status;
-        });
-
+        setState(() => _currentStatus = status);
         if (status.isFailed) {
           setState(() {
             _hasError = true;
-            _errorMsg = "Pipeline failed at agent: ${status.agentDisplayName}";
+            _errorMsg = 'Pipeline failed at agent: ${status.agentDisplayName}';
           });
           _subscription?.cancel();
         } else if (status.isComplete) {
           _subscription?.cancel();
           Future.delayed(const Duration(seconds: 1), () {
-            if (mounted) {
-              context.go('/rfp/preview/${widget.jobId}');
-            }
+            if (mounted) context.go('/rfp/preview/${widget.jobId}');
           });
         }
       },
@@ -70,34 +66,23 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     super.dispose();
   }
 
-  // Determine stage states
-  // Returns: 'done', 'running', 'pending'
   String _getStageState(String stage) {
     if (_currentStatus == null) return 'pending';
     if (_currentStatus!.isComplete) return 'done';
-    if (_currentStatus!.isFailed) {
-      // If it failed and this is the failed agent, show failed or pending
-      if (_currentStatus!.currentAgent == stage) return 'failed';
-    }
+    if (_currentStatus!.isFailed && _currentStatus!.currentAgent == stage) return 'failed';
 
     final current = _currentStatus!.currentAgent;
     final pct = _currentStatus!.progressPct;
 
     switch (stage) {
       case 'classifier':
-        if (pct > 25 || current == 'auditor' || current == 'vendor_intel' || current == 'drafter') {
-          return 'done';
-        }
+        if (pct > 25 || current == 'auditor' || current == 'vendor_intel' || current == 'drafter') return 'done';
         return (current == 'classifier') ? 'running' : 'pending';
       case 'auditor':
-        if (pct > 50 || current == 'vendor_intel' || current == 'drafter') {
-          return 'done';
-        }
+        if (pct > 50 || current == 'vendor_intel' || current == 'drafter') return 'done';
         return (current == 'auditor') ? 'running' : 'pending';
       case 'vendor_intel':
-        if (pct > 75 || current == 'drafter') {
-          return 'done';
-        }
+        if (pct > 75 || current == 'drafter') return 'done';
         return (current == 'vendor_intel') ? 'running' : 'pending';
       case 'drafter':
         return (current == 'drafter') ? 'running' : 'pending';
@@ -106,110 +91,327 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
     }
   }
 
-  Widget _buildAgentRow({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required String state,
-  }) {
-    Color iconColor = const Color(0xFF9CA3AF);
-    Widget badge = const SizedBox();
+  @override
+  Widget build(BuildContext context) {
+    final statusVal = _currentStatus;
+    final progressPct = statusVal?.progressPct ?? 0;
+    final traceCount = statusVal?.traceCount ?? 0;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
-    if (state == 'done') {
-      iconColor = AppTheme.accentColor;
-      badge = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: const Color(0xFFDCFCE7),
-          borderRadius: BorderRadius.circular(12),
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8F9FB),
+        appBar: StyledAppBar(title: 'Generating RFP', showBack: false),
+        body: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(20, 20, 20, bottomPadding + 24),
+          child: Column(
+            children: [
+              if (!_hasError) ...[
+                // Progress ring card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(28),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE8EDF3)),
+                  ),
+                  child: Column(
+                    children: [
+                      // Trace count chip
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF1E3A8A).withOpacity(0.06),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.psychology_outlined, size: 14, color: Color(0xFF1E3A8A)),
+                            const SizedBox(width: 6),
+                            Text(
+                              '$traceCount reasoning steps logged',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1E3A8A),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Circular progress
+                      Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          SizedBox(
+                            width: 120,
+                            height: 120,
+                            child: CircularProgressIndicator(
+                              value: progressPct / 100,
+                              strokeWidth: 8,
+                              backgroundColor: const Color(0xFFE8EDF3),
+                              valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF1E3A8A)),
+                              strokeCap: StrokeCap.round,
+                            ),
+                          ),
+                          Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '$progressPct%',
+                                style: const TextStyle(
+                                  fontSize: 26,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF0F172A),
+                                  letterSpacing: -0.5,
+                                ),
+                              ),
+                              const Text(
+                                'complete',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF94A3B8),
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        statusVal == null
+                            ? 'Initialising agent pipeline...'
+                            : 'Running: ${statusVal.agentDisplayName}',
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Color(0xFF64748B),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Agent steps card
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE8EDF3)),
+                  ),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E3A8A).withOpacity(0.07),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.account_tree_outlined,
+                                size: 15,
+                                color: Color(0xFF1E3A8A),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            const Text(
+                              'Agent pipeline',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF0F172A),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1, color: Color(0xFFE8EDF3)),
+                      _AgentStepRow(
+                        title: 'Requirements Classifier',
+                        subtitle: 'Extracts category, value & bidding method',
+                        icon: Icons.manage_search_outlined,
+                        state: _getStageState('classifier'),
+                        isLast: false,
+                      ),
+                      _AgentStepRow(
+                        title: 'Compliance Auditor',
+                        subtitle: 'Validates against PPRA regulations',
+                        icon: Icons.gavel_outlined,
+                        state: _getStageState('auditor'),
+                        isLast: false,
+                      ),
+                      _AgentStepRow(
+                        title: 'Vendor Intelligence',
+                        subtitle: 'Ranks vendors and checks conflicts',
+                        icon: Icons.groups_outlined,
+                        state: _getStageState('vendor_intel'),
+                        isLast: false,
+                      ),
+                      _AgentStepRow(
+                        title: 'Drafter & Executor',
+                        subtitle: 'Generates PDF and schedules actions',
+                        icon: Icons.description_outlined,
+                        state: _getStageState('drafter'),
+                        isLast: true,
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+
+                // Raw logs
+                _RawLogsExpander(statusVal: statusVal),
+
+              ] else ...[
+
+                // Error card
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFFFCDD2)),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF1F1),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.error_outline_rounded,
+                          color: Color(0xFFE53935),
+                          size: 32,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Pipeline interrupted',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF0F172A),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _errorMsg ?? 'An unexpected error occurred.',
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: Color(0xFF64748B),
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SecondaryActionButton(
+                              text: 'Back',
+                              onTap: () => context.go('/rfp/new'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: PrimaryActionButton(
+                              text: 'Retry',
+                              isLoading: false,
+                              enabled: true,
+                              onTap: _startListening,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.check, size: 12, color: Color(0xFF15803D)),
-            SizedBox(width: 4),
-            Text(
-              'Done',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
-            ),
-          ],
-        ),
-      );
-    } else if (state == 'running') {
-      iconColor = const Color(0xFFF59E0B);
-      badge = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFEF3C7),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SizedBox(
-              width: 10,
-              height: 10,
-              child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFB45309))),
-            ),
-            SizedBox(width: 6),
-            Text(
-              'Running',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFB45309)),
-            ),
-          ],
-        ),
-      );
-    } else if (state == 'failed') {
-      iconColor = const Color(0xFFEF4444);
-      badge = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: const Color(0xFFFEE2E2),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.close, size: 12, color: Color(0xFFB91C1C)),
-            SizedBox(width: 4),
-            Text(
-              'Failed',
-              style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFFB91C1C)),
-            ),
-          ],
-        ),
-      );
-    } else {
-      badge = Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: const Color(0xFFF3F4F6),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: const Text(
-          'Pending',
-          style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF6B7280)),
-        ),
-      );
+      ),
+    );
+  }
+}
+
+class _AgentStepRow extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final String state;
+  final bool isLast;
+
+  const _AgentStepRow({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.state,
+    required this.isLast,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    Color iconBg;
+    Color iconColor;
+    Widget badge;
+
+    switch (state) {
+      case 'done':
+        iconBg = const Color(0xFFF0FDF4);
+        iconColor = const Color(0xFF16A34A);
+        badge = _Badge(label: 'Done', color: const Color(0xFF16A34A), bg: const Color(0xFFF0FDF4));
+        break;
+      case 'running':
+        iconBg = const Color(0xFFFFFBEB);
+        iconColor = const Color(0xFFD97706);
+        badge = _RunningBadge();
+        break;
+      case 'failed':
+        iconBg = const Color(0xFFFFF1F1);
+        iconColor = const Color(0xFFE53935);
+        badge = _Badge(label: 'Failed', color: const Color(0xFFE53935), bg: const Color(0xFFFFF1F1));
+        break;
+      default:
+        iconBg = const Color(0xFFF1F5F9);
+        iconColor = const Color(0xFF94A3B8);
+        badge = _Badge(label: 'Pending', color: const Color(0xFF94A3B8), bg: const Color(0xFFF1F5F9));
     }
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: isLast
+          ? null
+          : const BoxDecoration(
+              border: Border(bottom: BorderSide(color: Color(0xFFE8EDF3))),
+            ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            padding: const EdgeInsets.all(9),
             decoration: BoxDecoration(
-              color: state == 'running'
-                  ? const Color(0xFFFEF3C7)
-                  : state == 'done'
-                      ? const Color(0xFFDCFCE7)
-                      : const Color(0xFFF3F4F6),
-              shape: BoxShape.circle,
+              color: iconBg,
+              borderRadius: BorderRadius.circular(10),
             ),
-            child: Icon(icon, size: 24, color: iconColor),
+            child: Icon(icon, size: 18, color: iconColor),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -217,15 +419,17 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.bold,
-                    color: state == 'pending' ? const Color(0xFF9CA3AF) : const Color(0xFF111827),
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: state == 'pending'
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF0F172A),
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                  style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8)),
                 ),
               ],
             ),
@@ -235,270 +439,115 @@ class _ProgressScreenState extends ConsumerState<ProgressScreen> {
       ),
     );
   }
+}
+
+class _Badge extends StatelessWidget {
+  final String label;
+  final Color color;
+  final Color bg;
+
+  const _Badge({required this.label, required this.color, required this.bg});
 
   @override
   Widget build(BuildContext context) {
-    final statusVal = _currentStatus;
-    final progressPct = statusVal?.progressPct ?? 0;
-    final traceCount = statusVal?.traceCount ?? 0;
-
-    return PopScope(
-      canPop: false, // User cannot swipe or click back button to interrupt pipeline
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF3F4F6),
-        appBar: AppBar(
-          title: const Text(
-            'Generating RFP',
-            style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
-          ),
-          automaticallyImplyLeading: false, // Disable leading back arrow
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          color: color,
         ),
-        body: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 600),
-              padding: const EdgeInsets.all(32.0),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Climbing trace count chip
-                  Align(
-                    alignment: Alignment.topRight,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryColor.withOpacity(0.05),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          const Icon(Icons.psychology, size: 16, color: AppTheme.primaryColor),
-                          const SizedBox(width: 6),
-                          Text(
-                            '$traceCount reasoning steps logged',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.primaryColor,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+      ),
+    );
+  }
+}
 
-                  if (!_hasError) ...[
-                    // Circular Progress
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        SizedBox(
-                          width: 140,
-                          height: 140,
-                          child: CircularProgressIndicator(
-                            value: progressPct / 100,
-                            strokeWidth: 10,
-                            backgroundColor: const Color(0xFFE5E7EB),
-                            valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
-                          ),
-                        ),
-                        Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              '$progressPct%',
-                              style: const TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF111827),
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            const Text(
-                              'Progress',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Color(0xFF6B7280),
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        )
-                      ],
-                    ),
-                    const SizedBox(height: 32),
-                    const Text(
-                      'RFP Agent Pipeline Active',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF111827),
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      statusVal == null 
-                          ? 'Starting agent tasks...'
-                          : 'Currently: ${statusVal.agentDisplayName}',
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        color: Color(0xFF6B7280),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    const Divider(color: Color(0xFFE5E7EB)),
-                    const SizedBox(height: 12),
-
-                    // 4 Agent steps
-                    _buildAgentRow(
-                      title: 'Requirements Classifier',
-                      subtitle: 'Extracts category, bidding method & certifications',
-                      icon: Icons.search,
-                      state: _getStageState('classifier'),
-                    ),
-                    _buildAgentRow(
-                      title: 'Compliance Auditor',
-                      subtitle: 'Validates against PPRA regulations scorecard',
-                      icon: Icons.gavel,
-                      state: _getStageState('auditor'),
-                    ),
-                    _buildAgentRow(
-                      title: 'Vendor Intelligence',
-                      subtitle: 'Finds top vendors & handles conflicts of interest',
-                      icon: Icons.people,
-                      state: _getStageState('vendor_intel'),
-                    ),
-                    _buildAgentRow(
-                      title: 'Drafter & Executor',
-                      subtitle: 'Generates document PDF & schedules actions',
-                      icon: Icons.description,
-                      state: _getStageState('drafter'),
-                    ),
-                  ] else ...[
-                    // Failed Card
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFFEF2F2),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFFCA5A5)),
-                      ),
-                      child: Column(
-                        children: [
-                          const Icon(
-                            Icons.error_outline,
-                            color: Color(0xFFEF4444),
-                            size: 48,
-                          ),
-                          const SizedBox(height: 16),
-                          const Text(
-                            'Pipeline Execution Interrupted',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF991B1B),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _errorMsg ?? 'An unexpected network error occurred.',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF7F1D1D),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: OutlinedButton(
-                                  onPressed: () {
-                                    context.go('/rfp/new');
-                                  },
-                                  style: OutlinedButton.styleFrom(
-                                    side: const BorderSide(color: Color(0xFFD1D5DB)),
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
-                                  child: const Text('Back to Home', style: TextStyle(color: Color(0xFF374151))),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: ElevatedButton(
-                                  onPressed: _startListening,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: const Color(0xFFEF4444),
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    padding: const EdgeInsets.symmetric(vertical: 14),
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                  ),
-                                  child: const Text('Retry Connection'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 24),
-                  
-                  // Debug view raw status JSON
-                  ExpansionTile(
-                    title: const Text(
-                      'View raw progress logs',
-                      style: TextStyle(fontSize: 13, color: Color(0xFF6B7280), fontWeight: FontWeight.bold),
-                    ),
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        margin: const EdgeInsets.only(top: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF9FAFB),
-                          border: Border.all(color: const Color(0xFFE5E7EB)),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Text(
-                            statusVal != null
-                                ? const JsonEncoder.withIndent('  ').convert(statusVal.toJson())
-                                : 'No log data fetched yet.',
-                            style: const TextStyle(
-                              fontFamily: 'monospace',
-                              fontSize: 11,
-                              color: Color(0xFF374151),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+class _RunningBadge extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          SizedBox(
+            width: 9,
+            height: 9,
+            child: CircularProgressIndicator(
+              strokeWidth: 1.5,
+              color: Color(0xFFD97706),
             ),
           ),
+          SizedBox(width: 5),
+          Text(
+            'Running',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFFD97706),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RawLogsExpander extends StatelessWidget {
+  final dynamic statusVal;
+  const _RawLogsExpander({required this.statusVal});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE8EDF3)),
+      ),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          leading: const Icon(Icons.terminal_outlined, size: 16, color: Color(0xFF94A3B8)),
+          title: const Text(
+            'View raw progress logs',
+            style: TextStyle(fontSize: 13, color: Color(0xFF64748B), fontWeight: FontWeight.w500),
+          ),
+          children: [
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F172A),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Text(
+                  statusVal != null
+                      ? const JsonEncoder.withIndent('  ').convert(statusVal.toJson())
+                      : 'No log data yet.',
+                  style: const TextStyle(
+                    fontFamily: 'monospace',
+                    fontSize: 11,
+                    color: Color(0xFF94A3B8),
+                    height: 1.5,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
