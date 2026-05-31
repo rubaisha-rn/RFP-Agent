@@ -30,6 +30,12 @@ class AuthService {
     });
     return Organization.fromJson(response);
   }
+
+  Future<void> completeOnboarding(String organizationId) async {
+    await _apiClient.post('/auth/complete-onboarding', {
+        'organization_id': organizationId,
+    });
+  }
 }
 
 class AuthNotifier extends StateNotifier<Organization?> {
@@ -75,6 +81,20 @@ class AuthNotifier extends StateNotifier<Organization?> {
       password: password,
     );
     await _saveSession(org);
+  }
+
+  Future<void> completeOnboarding() async {
+    if (state == null) return;
+    await _authService.completeOnboarding(state!.id);
+
+    final updated = Organization(
+        id: state!.id,
+        companyName: state!.companyName,
+        companyEmail: state!.companyEmail,
+        isOnboarded: true,
+    );
+
+    await _saveSession(updated);
   }
 
   Future<void> logout() async {

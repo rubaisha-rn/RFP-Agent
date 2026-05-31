@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../widgets/primary_button.dart';
+import '../../services/auth_service.dart';
 
-class AccountSetupScreen extends StatefulWidget {
+class AccountSetupScreen extends ConsumerStatefulWidget {
   const AccountSetupScreen({Key? key}) : super(key: key);
 
   @override
-  State<AccountSetupScreen> createState() => _AccountSetupScreenState();
+  ConsumerState<AccountSetupScreen> createState() => _AccountSetupScreenState();
 }
 
-class _AccountSetupScreenState extends State<AccountSetupScreen> {
+class _AccountSetupScreenState extends ConsumerState<AccountSetupScreen> {
   String? _selectedIndustry;
   String? _selectedBudget;
   String? _uploadedFileName;
@@ -41,9 +43,9 @@ class _AccountSetupScreenState extends State<AccountSetupScreen> {
     });
   }
 
-  void _complete() {
-    print('[AccountSetupScreen] Setup complete. Navigating to /rfp/new placeholder.');
-    context.go('/rfp/new');
+  Future<void> _complete() async {
+    await ref.read(authProvider.notifier).completeOnboarding();
+    if (mounted) context.go('/rfp/new');
   }
 
   @override

@@ -28,6 +28,7 @@ class RfpAgentApp extends ConsumerWidget {
         final loc = state.matchedLocation;
         final isSplash = loc == '/';
         final isAuth = loc == '/signup' || loc == '/login';
+        final isOnboarding = loc == '/account-setup';
 
         if (org == null) {
           // If not logged in and not on splash or auth pages, redirect to signup
@@ -35,8 +36,13 @@ class RfpAgentApp extends ConsumerWidget {
             return '/signup';
           }
         } else {
-          // If logged in and on splash or auth pages, skip directly to dashboard
-          if (isSplash || isAuth) {
+          // If logged in and not onboarded
+          if (!org.isOnboarded && !isOnboarding) {
+            return '/account-setup';
+          }
+
+          // If logged in and onboarded
+          if (org.isOnboarded && (isSplash || isAuth || isOnboarding)) {
             return '/rfp/new';
           }
         }
