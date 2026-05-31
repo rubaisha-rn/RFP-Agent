@@ -78,7 +78,7 @@ class VendorAuthNotifier extends StateNotifier<VendorOrganization?> {
     }
   }
 
-  Future<void> signup({
+  Future<VendorOrganization> signup({
     required String companyName,
     required String email,
     required String password,
@@ -95,9 +95,10 @@ class VendorAuthNotifier extends StateNotifier<VendorOrganization?> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_storageKey, jsonEncode(org.toJson()));
     state = org;
+    return org;
   }
 
-  Future<void> login({
+  Future<VendorOrganization> login({
     required String email,
     required String password,
   }) async {
@@ -105,6 +106,7 @@ class VendorAuthNotifier extends StateNotifier<VendorOrganization?> {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_storageKey, jsonEncode(org.toJson()));
     state = org;
+    return org;
   }
 
   Future<void> logout() async {

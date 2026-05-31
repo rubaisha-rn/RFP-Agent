@@ -32,23 +32,29 @@ class RfpAgentApp extends ConsumerWidget {
       redirect: (context, state) {
         final loc = state.matchedLocation;
         final isVendorRoute = loc.startsWith('/vendor');
+        final vendorOrg = ref.read(vendorAuthProvider);
+        final procOrg = ref.read(authProvider);
+
+        print('[ROUTER REDIRECT] loc=$loc');
+        print('[ROUTER REDIRECT] isVendorRoute=$isVendorRoute');
+        print('[ROUTER REDIRECT] vendorOrg=${vendorOrg?.id}');
+        print('[ROUTER REDIRECT] procOrg=${procOrg?.id}');
+
         final isPublicVendorRoute = loc.startsWith('/vendor/rfp/') 
           || loc == '/vendor/login' 
           || loc == '/vendor/signup';
         
         if (isVendorRoute) {
-          final vendorOrg = ref.watch(vendorAuthProvider);
           if (vendorOrg == null && !isPublicVendorRoute) {
             return '/vendor/login';
           }
           return null;
         }
 
-        final org = ref.watch(authProvider);
         final isSplash = loc == '/';
         final isAuth = loc == '/signup' || loc == '/login';
 
-        if (org == null) {
+        if (procOrg == null) {
           // If not logged in and not on splash or auth pages, redirect to signup
           if (!isSplash && !isAuth) {
             return '/signup';

@@ -42,7 +42,7 @@ class _VendorSignupScreenState extends ConsumerState<VendorSignupScreen> {
     }
     setState(() => _isLoading = true);
     try {
-      await ref.read(vendorAuthProvider.notifier).signup(
+      final org = await ref.read(vendorAuthProvider.notifier).signup(
         companyName: _companyController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
@@ -50,8 +50,7 @@ class _VendorSignupScreenState extends ConsumerState<VendorSignupScreen> {
         categories: _selectedCategories.toList(),
       );
       if (mounted) {
-        final org = ref.read(vendorAuthProvider);
-        context.go('/vendor/inbox/${org?.id}');
+        context.go('/vendor/inbox/${org.id}');
       }
     } on ApiException catch (e) {
       if (mounted) {

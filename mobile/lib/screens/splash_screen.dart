@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/auth_service.dart';
+import '../../services/vendor_service.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
@@ -30,9 +31,26 @@ class _SplashScreenState extends ConsumerState<SplashScreen> with SingleTickerPr
   }
 
   Future<void> _navigateToNext() async {
+    // If user landed on a non-root URL, never auto-navigate
+    final currentFragment = Uri.base.fragment;
+    if (currentFragment.isNotEmpty && currentFragment != '/') {
+      print('[SPLASH] Skipping auto-navigate, URL has fragment: $currentFragment');
+      return;
+    }
+
     // Wait for the animation and screen visual balance
     await Future.delayed(const Duration(milliseconds: 1800));
     if (!mounted) return;
+
+    final vendorOrg = ref.read(vendorAuthProvider);
+    final currentLoc = GoRouterState.of(context).uri.toString();
+
+    if (currentLoc.startsWith('/vendor') || vendorOrg != null) {
+      if (vendorOrg != null) {
+        context.go('/vendor/inbox/${vendorOrg.id}');
+      }
+      return;
+    }
 
     final org = ref.read(authProvider);
     if (org != null) {

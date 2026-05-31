@@ -31,16 +31,22 @@ class _VendorLoginScreenState extends ConsumerState<VendorLoginScreen> {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      await ref.read(vendorAuthProvider.notifier).login(
+      final org = await ref.read(vendorAuthProvider.notifier).login(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
+      print('[VENDOR LOGIN] org.id = "${org.id}"');
+      print('[VENDOR LOGIN] returnTo = "${widget.returnTo}"');
+      print('[VENDOR LOGIN] mounted = $mounted');
+      print('[VENDOR LOGIN] About to navigate to /vendor/inbox/${org.id}');
+
+      await Future.delayed(const Duration(milliseconds: 200)); // fix race condition
+
       if (mounted) {
-        final org = ref.read(vendorAuthProvider);
         if (widget.returnTo != null && widget.returnTo!.isNotEmpty) {
-          context.go(widget.returnTo!);
+          GoRouter.of(context).pushReplacement(widget.returnTo!);
         } else {
-          context.go('/vendor/inbox/${org?.id}');
+          GoRouter.of(context).pushReplacement('/vendor/inbox/${org.id}');
         }
       }
     } on ApiException catch (e) {
