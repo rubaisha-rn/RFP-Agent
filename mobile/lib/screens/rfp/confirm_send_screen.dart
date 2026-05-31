@@ -5,15 +5,12 @@ import '../../core/theme.dart';
 import '../../models/vendor.dart';
 import '../../models/rfp_result.dart';
 import '../../services/rfp_service.dart';
+import '../../widgets/shared_ui.dart';
 
 class ConfirmSendScreen extends ConsumerStatefulWidget {
   final String jobId;
   final List<Vendor> selectedVendors;
-  const ConfirmSendScreen({
-    Key? key,
-    required this.jobId,
-    required this.selectedVendors,
-  }) : super(key: key);
+  const ConfirmSendScreen({Key? key, required this.jobId, required this.selectedVendors}) : super(key: key);
 
   @override
   ConsumerState<ConfirmSendScreen> createState() => _ConfirmSendScreenState();
@@ -32,333 +29,224 @@ class _ConfirmSendScreenState extends ConsumerState<ConfirmSendScreen> {
   }
 
   Future<void> _loadResult() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
+    setState(() { _isLoading = true; _errorMessage = null; });
     try {
       final res = await ref.read(rfpServiceProvider).getResult(widget.jobId);
-      setState(() {
-        _result = res;
-        _isLoading = false;
-      });
+      setState(() { _result = res; _isLoading = false; });
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
+      setState(() { _errorMessage = e.toString(); _isLoading = false; });
     }
   }
 
   void _triggerDispatch() async {
-    setState(() {
-      _isDispatching = true;
-    });
-
-    // The backend drafter agent already executed all dispatching tasks in the background.
-    // This is a highly immersive, satisfying confirmation phase for the officer.
+    setState(() => _isDispatching = true);
     await Future.delayed(const Duration(seconds: 2));
-
     if (mounted) {
-      setState(() {
-        _isDispatching = false;
-      });
+      setState(() => _isDispatching = false);
       context.go('/rfp/success/${widget.jobId}');
     }
   }
 
-  Widget _buildTimelineStep({
-    required String title,
-    required String description,
-    required IconData icon,
-    required bool isLast,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: Color(0xFFDCFCE7),
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(Icons.check, size: 16, color: AppTheme.accentColor),
-            ),
-            if (!isLast)
-              Container(
-                width: 2,
-                height: 48,
-                color: const Color(0xFF86EFAC),
-              ),
-          ],
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF111827),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: const TextStyle(
-                  fontSize: 13,
-                  color: Color(0xFF6B7280),
-                  height: 1.3,
-                ),
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Color(0xFFF3F4F6),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(color: AppTheme.primaryColor),
-              SizedBox(height: 16),
-              Text(
-                'Preparing confirmation details...',
-                style: TextStyle(color: Color(0xFF6B7280), fontWeight: FontWeight.w500),
-              )
-            ],
-          ),
-        ),
-      );
-    }
-
+    if (_isLoading) return LoadingScaffold(message: 'Preparing confirmation...');
     if (_errorMessage != null) {
-      return Scaffold(
-        backgroundColor: const Color(0xFFF3F4F6),
-        appBar: AppBar(title: const Text('Confirm RFP')),
-        body: Center(
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 500),
-            margin: const EdgeInsets.all(24),
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFFCA5A5)),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline, color: Color(0xFFEF4444), size: 48),
-                const SizedBox(height: 16),
-                const Text(
-                  'Failed to load details',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF991B1B)),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  _errorMessage!,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Color(0xFF7F1D1D)),
-                ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: _loadResult,
-                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.primaryColor),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+      return ErrorScaffold(title: 'Confirm & Send', message: _errorMessage!, onRetry: _loadResult);
     }
 
     final res = _result!;
     final portal = res.portalPosting;
     final rfpBody = res.finalRfp?.rfpBody;
-
-    final referenceId = portal?.referenceId ?? 'PPRA-2026-${widget.jobId.substring(0, 8).toUpperCase()}';
+    final referenceId = portal?.referenceId ??
+        'PPRA-2026-${widget.jobId.substring(0, 8).toUpperCase()}';
     final vendorCount = widget.selectedVendors.length;
     final closingDate = rfpBody?.submissionDeadlineIso.split('T')[0] ?? 'TBD';
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Stack(
       children: [
         Scaffold(
-          backgroundColor: const Color(0xFFF3F4F6),
-          appBar: AppBar(
-            title: const Text(
-              'Confirm & Send',
-              style: TextStyle(fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
+          backgroundColor: const Color(0xFFF8F9FB),
+          appBar: StyledAppBar(title: 'Confirm & send'),
+          body: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(20, 20, 20, bottomPadding + 100),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+
+                // Summary card
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xFFE8EDF3)),
+                  ),
+                  child: Column(
+                    children: [
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(7),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E3A8A).withOpacity(0.07),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.summarize_outlined, size: 15, color: Color(0xFF1E3A8A)),
+                            ),
+                            const SizedBox(width: 10),
+                            const Text(
+                              'Dispatch summary',
+                              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Divider(height: 1, color: Color(0xFFE8EDF3)),
+                      _SummaryRow(icon: Icons.tag_rounded, label: 'Reference ID', value: referenceId),
+                      _SummaryRow(icon: Icons.business_outlined, label: 'Vendors selected', value: '$vendorCount'),
+                      _SummaryRow(icon: Icons.mail_outline_rounded, label: 'Dispatch method', value: 'Secure email'),
+                      _SummaryRow(icon: Icons.event_outlined, label: 'Submission closing', value: closingDate, isLast: true),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                // Vendor list
+                const SectionHeader(icon: Icons.groups_outlined, text: 'Selected vendors'),
+                const SizedBox(height: 10),
+                ...widget.selectedVendors.map((v) => Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFE8EDF3)),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF0FDF4),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.business_outlined, size: 14, color: Color(0xFF16A34A)),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(v.name, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                            Text(v.email, style: const TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                          ],
+                        ),
+                      ),
+                      const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF16A34A)),
+                    ],
+                  ),
+                )),
+
+                const SizedBox(height: 20),
+
+                // What happens next
+                const SectionHeader(icon: Icons.bolt_outlined, text: 'What happens next'),
+                const SizedBox(height: 10),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: const Color(0xFFE8EDF3)),
+                  ),
+                  child: Column(
+                    children: [
+                      _TimelineStep(
+                        icon: Icons.mail_outline_rounded,
+                        color: const Color(0xFF3B82F6),
+                        title: 'Invitations dispatched',
+                        subtitle: 'Custom emails sent to $vendorCount selected vendors.',
+                        isLast: false,
+                      ),
+                      _TimelineStep(
+                        icon: Icons.calendar_month_outlined,
+                        color: const Color(0xFFD97706),
+                        title: 'Calendar events created',
+                        subtitle: 'Pre-bid, submission, and opening dates scheduled.',
+                        isLast: false,
+                      ),
+                      _TimelineStep(
+                        icon: Icons.public_outlined,
+                        color: const Color(0xFF16A34A),
+                        title: 'Posted to PPRA portal',
+                        subtitle: 'Published under reference $referenceId.',
+                        isLast: true,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
-          body: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Container(
-                constraints: const BoxConstraints(maxWidth: 600),
-                padding: const EdgeInsets.all(32.0),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                  border: Border.all(color: const Color(0xFFE5E7EB)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Dispatch Summary',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF111827),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Dispatch Info Card
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF9FAFB),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE5E7EB)),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildSummaryRow(Icons.pin, 'Reference ID', referenceId),
-                          const Divider(height: 24, color: Color(0xFFE5E7EB)),
-                          _buildSummaryRow(Icons.business, 'Target Vendors', '$vendorCount selected'),
-                          const Divider(height: 24, color: Color(0xFFE5E7EB)),
-                          _buildSummaryRow(Icons.mail_outline, 'Dispatch Method', 'Secure Email Invitation'),
-                          const Divider(height: 24, color: Color(0xFFE5E7EB)),
-                          _buildSummaryRow(Icons.event, 'Submission Closing', closingDate),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 32),
-
-                    const Text(
-                      'Automated Dispatch Sequence',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF111827),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Timeline
-                    _buildTimelineStep(
-                      title: 'Dispatched Invitations',
-                      description: 'Custom emails with direct tender proposal instructions generated for the $vendorCount selected vendors.',
-                      icon: Icons.check,
-                      isLast: false,
-                    ),
-                    _buildTimelineStep(
-                      title: 'Created Calendar Events',
-                      description: 'Invites generated for pre-bid meetings, closing deadlines, and opening events for bid compliance.',
-                      icon: Icons.check,
-                      isLast: false,
-                    ),
-                    _buildTimelineStep(
-                      title: 'Posted to PPRA Portal',
-                      description: 'Tender details officially cataloged and published under public Reference ID $referenceId.',
-                      icon: Icons.check,
-                      isLast: true,
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Send Button
-                    ElevatedButton(
-                      onPressed: _triggerDispatch,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryColor,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        minimumSize: const Size(double.infinity, 54),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      ),
-                      child: const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.send),
-                          SizedBox(width: 8),
-                          Text(
-                            'Send RFP',
-                            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+          bottomNavigationBar: Container(
+            padding: EdgeInsets.fromLTRB(20, 12, 20, bottomPadding + 12),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              border: Border(top: BorderSide(color: Color(0xFFE8EDF3))),
+            ),
+            child: PrimaryActionButton(
+              text: 'Send RFP',
+              isLoading: false,
+              enabled: true,
+              onTap: _triggerDispatch,
+              icon: Icons.send_rounded,
             ),
           ),
         ),
 
-        // Fullscreen Loading Overlay
+        // Dispatching overlay
         if (_isDispatching)
           Positioned.fill(
             child: Container(
-              color: Colors.black.withOpacity(0.6),
+              color: Colors.black.withOpacity(0.5),
               child: Center(
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 32),
+                  margin: const EdgeInsets.all(40),
+                  padding: const EdgeInsets.all(28),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 20,
-                      )
-                    ]
                   ),
-                  child: const Column(
+                  child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(color: AppTheme.primaryColor),
-                      SizedBox(height: 24),
-                      Text(
+                      const SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          color: Color(0xFF1E3A8A),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
                         'Dispatching...',
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 17,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF111827),
+                          color: Color(0xFF0F172A),
                           decoration: TextDecoration.none,
                         ),
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Broadcasting emails & scheduling logs',
+                      const SizedBox(height: 6),
+                      const Text(
+                        'Broadcasting emails and scheduling events',
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                           fontSize: 13,
-                          fontWeight: FontWeight.normal,
-                          color: Color(0xFF6B7280),
+                          color: Color(0xFF64748B),
                           decoration: TextDecoration.none,
                         ),
                       ),
@@ -371,16 +259,95 @@ class _ConfirmSendScreenState extends ConsumerState<ConfirmSendScreen> {
       ],
     );
   }
+}
 
-  Widget _buildSummaryRow(IconData icon, String label, String val) {
-    return Row(
-      children: [
-        Icon(icon, size: 20, color: const Color(0xFF4B5563)),
-        const SizedBox(width: 12),
-        Text(label, style: const TextStyle(fontSize: 14, color: Color(0xFF4B5563), fontWeight: FontWeight.w500)),
-        const Spacer(),
-        Text(val, style: const TextStyle(fontSize: 14, color: Color(0xFF111827), fontWeight: FontWeight.bold)),
-      ],
+class _SummaryRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool isLast;
+
+  const _SummaryRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.isLast = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      decoration: isLast
+          ? null
+          : const BoxDecoration(
+              border: Border(bottom: BorderSide(color: Color(0xFFE8EDF3))),
+            ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: const Color(0xFF94A3B8)),
+          const SizedBox(width: 10),
+          Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+          const Spacer(),
+          Text(
+            value,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F172A)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TimelineStep extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final bool isLast;
+
+  const _TimelineStep({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.isLast,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: isLast
+          ? null
+          : const BoxDecoration(
+              border: Border(bottom: BorderSide(color: Color(0xFFE8EDF3))),
+            ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(9),
+            ),
+            child: Icon(icon, size: 16, color: color),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A))),
+                const SizedBox(height: 2),
+                Text(subtitle, style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.4)),
+              ],
+            ),
+          ),
+          const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF16A34A)),
+        ],
+      ),
     );
   }
 }
