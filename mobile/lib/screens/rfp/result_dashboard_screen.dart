@@ -1110,6 +1110,125 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen> {
                   ],
                 ),
 
+                // 6. Vendor Responses Card
+                _buildCard(
+                  title: 'Vendor Responses',
+                  icon: Icons.receipt_long,
+                  trailingHeader: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '${res.vendorResponses.length}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.primaryColor,
+                      ),
+                    ),
+                  ),
+                  children: res.vendorResponses.isEmpty
+                      ? [
+                          const Center(
+                            child: Column(
+                              children: [
+                                Icon(Icons.calendar_today, color: Color(0xFF9CA3AF), size: 32),
+                                SizedBox(height: 8),
+                                Text(
+                                  'Awaiting vendor responses...',
+                                  style: TextStyle(color: Color(0xFF6B7280), fontStyle: FontStyle.italic),
+                                ),
+                              ],
+                            ),
+                          )
+                        ]
+                      : [
+                          Builder(
+                            builder: (context) {
+                              final count = res.vendorResponses.length;
+                              double sum = 0;
+                              double minBid = double.infinity;
+                              double maxBid = 0;
+                              for (var vr in res.vendorResponses) {
+                                sum += vr.bidAmountPkr;
+                                if (vr.bidAmountPkr < minBid) minBid = vr.bidAmountPkr;
+                                if (vr.bidAmountPkr > maxBid) maxBid = vr.bidAmountPkr;
+                              }
+                              final avgBid = sum / count;
+                              return Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text('Responses: $count', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                      Text('Avg: PKR ${_formatCurrency(avgBid)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                      Text('Range: PKR ${_formatCurrency(minBid)} - ${_formatCurrency(maxBid)}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ListView.builder(
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    itemCount: count,
+                                    itemBuilder: (context, index) {
+                                      final vr = res.vendorResponses[index];
+                                      final summaryText = vr.technicalSummary.length > 200
+                                          ? '${vr.technicalSummary.substring(0, 200)}...'
+                                          : vr.technicalSummary;
+                                      return Container(
+                                        margin: const EdgeInsets.only(bottom: 12),
+                                        padding: const EdgeInsets.all(14),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFFF9FAFB),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: const Color(0xFFE5E7EB)),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(vr.vendorName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                                      Text(vr.vendorEmail, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                                                    ],
+                                                  ),
+                                                ),
+                                                Text(
+                                                  'PKR ${_formatCurrency(vr.bidAmountPkr)}',
+                                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppTheme.primaryColor),
+                                                ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              summaryText,
+                                              style: const TextStyle(fontSize: 12, color: Color(0xFF4B5563)),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'Submitted: ${_formatDateTime(vr.submittedAt)}',
+                                              style: const TextStyle(fontSize: 10, color: Color(0xFF9CA3AF)),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              );
+                            },
+                          )
+                        ],
+                ),
+
                 const SizedBox(height: 40),
               ],
             ),

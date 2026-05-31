@@ -5,6 +5,7 @@ import '../../services/auth_service.dart';
 import '../../widgets/labeled_field.dart';
 import '../../widgets/primary_button.dart';
 import '../../core/api_client.dart';
+import '../../core/theme.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   final bool isLogin;
@@ -265,6 +266,13 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                           fontSize: 14,
                         ),
                       ),
+                    ),
+                  ),
+                  Center(
+                    child: TextButton(
+                      onPressed: () => context.go('/vendor/signup'),
+                      child: const Text('I am a Vendor →', 
+                        style: TextStyle(color: AppTheme.accentColor)),
                     ),
                   ),
                 ],

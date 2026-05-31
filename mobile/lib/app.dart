@@ -14,6 +14,12 @@ import 'screens/rfp/success_screen.dart';
 import 'screens/rfp/result_dashboard_screen.dart';
 import 'models/vendor.dart';
 import 'services/auth_service.dart';
+import 'services/vendor_service.dart';
+import 'screens/vendor/vendor_signup_screen.dart';
+import 'screens/vendor/vendor_login_screen.dart';
+import 'screens/vendor/vendor_inbox_screen.dart';
+import 'screens/vendor/vendor_rfp_view_screen.dart';
+import 'screens/vendor/vendor_bid_response_screen.dart';
 
 class RfpAgentApp extends ConsumerWidget {
   const RfpAgentApp({Key? key}) : super(key: key);
@@ -24,8 +30,21 @@ class RfpAgentApp extends ConsumerWidget {
     final router = GoRouter(
       initialLocation: '/',
       redirect: (context, state) {
-        final org = ref.watch(authProvider);
         final loc = state.matchedLocation;
+        final isVendorRoute = loc.startsWith('/vendor');
+        final isPublicVendorRoute = loc.startsWith('/vendor/rfp/') 
+          || loc == '/vendor/login' 
+          || loc == '/vendor/signup';
+        
+        if (isVendorRoute) {
+          final vendorOrg = ref.watch(vendorAuthProvider);
+          if (vendorOrg == null && !isPublicVendorRoute) {
+            return '/vendor/login';
+          }
+          return null;
+        }
+
+        final org = ref.watch(authProvider);
         final isSplash = loc == '/';
         final isAuth = loc == '/signup' || loc == '/login';
 
@@ -105,6 +124,34 @@ class RfpAgentApp extends ConsumerWidget {
             final jobId = state.pathParameters['jobId'] ?? '';
             return ResultDashboardScreen(jobId: jobId);
           },
+        ),
+        GoRoute(
+          path: '/vendor/signup', 
+          builder: (context, state) => const VendorSignupScreen(),
+        ),
+        GoRoute(
+          path: '/vendor/login', 
+          builder: (context, state) => VendorLoginScreen(
+            returnTo: state.uri.queryParameters['return_to'],
+          ),
+        ),
+        GoRoute(
+          path: '/vendor/inbox/:vendorId', 
+          builder: (context, state) => VendorInboxScreen(
+            vendorId: state.pathParameters['vendorId']!,
+          ),
+        ),
+        GoRoute(
+          path: '/vendor/rfp/:jobId', 
+          builder: (context, state) => VendorRfpViewScreen(
+            jobId: state.pathParameters['jobId']!,
+          ),
+        ),
+        GoRoute(
+          path: '/vendor/respond/:jobId', 
+          builder: (context, state) => VendorBidResponseScreen(
+            jobId: state.pathParameters['jobId']!,
+          ),
         ),
       ],
     );

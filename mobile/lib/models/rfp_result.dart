@@ -13,6 +13,7 @@ class RfpResult {
   final ComplianceScorecard? compliance;
   final VendorIntel? vendorIntel;
   final FinalRfp? finalRfp;
+  final List<VendorResponse> vendorResponses;
 
   RfpResult({
     required this.job,
@@ -25,6 +26,7 @@ class RfpResult {
     this.compliance,
     this.vendorIntel,
     this.finalRfp,
+    this.vendorResponses = const [],
   });
 
   factory RfpResult.fromJson(Map<String, dynamic> json) {
@@ -71,6 +73,9 @@ class RfpResult {
     final finalRfpJson = findAgentOutput('drafter', 'final_rfp');
     final finalRfp = finalRfpJson != null ? FinalRfp.fromJson(finalRfpJson) : null;
 
+    final vendorResponsesList = json['vendor_responses'] as List<dynamic>? ?? [];
+    final vendorResponses = vendorResponsesList.map((e) => VendorResponse.fromJson(e as Map<String, dynamic>)).toList();
+
     return RfpResult(
       job: job,
       traces: tracesList,
@@ -82,6 +87,39 @@ class RfpResult {
       compliance: compliance,
       vendorIntel: vendorIntel,
       finalRfp: finalRfp,
+      vendorResponses: vendorResponses,
+    );
+  }
+}
+
+class VendorResponse {
+  final String id;
+  final String vendorId;
+  final String vendorName;
+  final String vendorEmail;
+  final double bidAmountPkr;
+  final String technicalSummary;
+  final String submittedAt;
+
+  VendorResponse({
+    required this.id,
+    required this.vendorId,
+    required this.vendorName,
+    required this.vendorEmail,
+    required this.bidAmountPkr,
+    required this.technicalSummary,
+    required this.submittedAt,
+  });
+
+  factory VendorResponse.fromJson(Map<String, dynamic> json) {
+    return VendorResponse(
+      id: json['id'] ?? '',
+      vendorId: json['vendor_id'] ?? '',
+      vendorName: json['vendor_name'] ?? '',
+      vendorEmail: json['vendor_email'] ?? '',
+      bidAmountPkr: (json['bid_amount_pkr'] ?? 0.0).toDouble(),
+      technicalSummary: json['technical_summary'] ?? '',
+      submittedAt: json['submitted_at'] ?? '',
     );
   }
 }
