@@ -19,6 +19,7 @@ class AuthResponse(BaseModel):
     organization_id: str
     company_name: str
     company_email: str
+    is_onboarded: bool
 
 
 @router.post("/signup", response_model=AuthResponse)
@@ -33,9 +34,10 @@ def signup(req: SignupRequest):
         "company_email": req.company_email,
         "company_name": req.company_name,
         "password_hash": pw_hash,
+        "is_onboarded": False,
     }).execute()
     org = row.data[0]
-    return AuthResponse(organization_id=org["id"], company_name=org["company_name"], company_email=org["company_email"])
+    return AuthResponse(organization_id=org["id"], company_name=org["company_name"], company_email=org["company_email"], is_onboarded=org["is_onboarded"],)
 
 
 class LoginRequest(BaseModel):
@@ -51,4 +53,14 @@ def login(req: LoginRequest):
     org = res.data[0]
     if not bcrypt.checkpw(req.password.encode(), org["password_hash"].encode()):
         raise HTTPException(status_code=401, detail="invalid credentials")
-    return AuthResponse(organization_id=org["id"], company_name=org["company_name"], company_email=org["company_email"])
+    return AuthResponse(organization_id=org["id"], company_name=org["company_name"], company_email=org["company_email"], is_onboarded=org.get("is_onboarded", True),)
+
+@router.post("/complete-onboarding")
+def complete_onboarding(body: dict):
+    organization_id = body.get("organization_id")
+    if not organization_id:
+        raise HTTPException(status_code=400, detail="organization_id required")
+    supabase_service.client.table("organizations").update(
+        {"is_onboarded": True}
+    ).eq("id", organization_id).execute()
+    return {"success": True}
