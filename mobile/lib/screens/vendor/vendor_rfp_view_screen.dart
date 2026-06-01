@@ -66,7 +66,17 @@ class _VendorRfpViewScreenState extends ConsumerState<VendorRfpViewScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FB),
-      appBar: StyledAppBar(title: 'RFP Details'),
+      appBar: _VendorBackAppBar(
+        title: 'RFP Details',
+        onBack: () {
+            final vendorId = ref.read(vendorAuthProvider)?.id;
+            if (vendorId != null) {
+            context.go('/vendor/inbox/$vendorId');
+            } else {
+            context.go('/vendor/login');
+            }
+        },
+      ),
       body: Column(
         children: [
           Expanded(
@@ -300,6 +310,50 @@ class _MetaRow extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _VendorBackAppBar extends StatelessWidget implements PreferredSizeWidget {
+  final String title;
+  final VoidCallback onBack;
+
+  const _VendorBackAppBar({required this.title, required this.onBack});
+
+  @override
+  Size get preferredSize => const Size.fromHeight(60);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Color(0xFFE8EDF3))),
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            children: [
+              AppIconButton(
+                icon: Icons.arrow_back_ios_new_rounded,
+                onTap: onBack,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                  letterSpacing: -0.2,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
