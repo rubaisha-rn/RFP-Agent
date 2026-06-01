@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../services/vendor_service.dart';
-import '../../core/theme.dart';
 import '../../core/api_client.dart';
 import '../../widgets/labeled_field.dart';
+import '../../widgets/shared_ui.dart';
 
 class VendorLoginScreen extends ConsumerStatefulWidget {
   final String? returnTo;
@@ -20,6 +20,7 @@ class _VendorLoginScreenState extends ConsumerState<VendorLoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -30,7 +31,7 @@ class _VendorLoginScreenState extends ConsumerState<VendorLoginScreen> {
 
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isLoading = true);
+    setState(() { _isLoading = true; _errorMessage = null; });
     try {
       final org = await ref.read(vendorAuthProvider.notifier).login(
         email: _emailController.text.trim(),
@@ -38,10 +39,8 @@ class _VendorLoginScreenState extends ConsumerState<VendorLoginScreen> {
       );
       print('[VENDOR LOGIN] org.id = "${org.id}"');
       print('[VENDOR LOGIN] returnTo = "${widget.returnTo}"');
-      print('[VENDOR LOGIN] mounted = $mounted');
-      print('[VENDOR LOGIN] About to navigate to /vendor/inbox/${org.id}');
 
-      await Future.delayed(const Duration(milliseconds: 200)); // fix race condition
+      await Future.delayed(const Duration(milliseconds: 200));
 
       if (mounted) {
         if (widget.returnTo != null && widget.returnTo!.isNotEmpty) {
@@ -51,13 +50,9 @@ class _VendorLoginScreenState extends ConsumerState<VendorLoginScreen> {
         }
       }
     } on ApiException catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
-      }
+      setState(() => _errorMessage = e.message);
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
+      setState(() => _errorMessage = 'An unexpected error occurred: $e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -65,73 +60,144 @@ class _VendorLoginScreenState extends ConsumerState<VendorLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Vendor Login'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppTheme.accentColor.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Text('VENDOR PORTAL', style: TextStyle(color: AppTheme.accentColor, fontSize: 12, fontWeight: FontWeight.bold)),
+      backgroundColor: const Color(0xFF0A2918),
+      body: Column(
+        children: [
+
+          // ── Vendor branded header ────────────────────────────────────
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.only(
+              top: topPadding + 24,
+              left: 24, right: 24, bottom: 28,
             ),
-          )
-        ],
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 400),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  LabeledField(
-                    label: 'Email',
-                    controller: _emailController,
-                    hintText: 'vendor@example.com',
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 16),
-                  LabeledField(
-                    label: 'Password',
-                    controller: _passwordController,
-                    hintText: '••••••••',
-                    obscureText: true,
-                    validator: (v) => v == null || v.isEmpty ? 'Required' : null,
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 48,
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _submit,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.accentColor,
-                        foregroundColor: Colors.white,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF16A34A), Color(0xFF0A2918)],
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white.withOpacity(0.2)),
                       ),
-                      child: _isLoading 
-                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                          : const Text('Sign In', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      child: const Icon(Icons.handshake_outlined, color: Colors.white, size: 18),
                     ),
+                    const SizedBox(width: 10),
+                    const Text(
+                      'Vendor Portal',
+                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.3),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Welcome back',
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: -0.3, height: 1.1),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Sign in to view your RFP invitations and submit bids.',
+                  style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.55), height: 1.4),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Form panel ───────────────────────────────────────────────
+          Expanded(
+            child: Container(
+              color: const Color(0xFFF8F9FB),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.fromLTRB(24, 28, 24, bottomPadding + 24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+
+                      if (_errorMessage != null) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFF1F1),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFFFFCDD2)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Icon(Icons.error_outline_rounded, color: Color(0xFFE53935), size: 17),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: const TextStyle(color: Color(0xFFC62828), fontSize: 13, height: 1.4),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                      ],
+
+                      const VFieldLabel(text: 'Work email'),
+                      const SizedBox(height: 6),
+                      LabeledField(
+                        label: '',
+                        hintText: 'bids@yourcompany.pk',
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (v) => v == null || v.isEmpty ? 'Email is required' : null,
+                      ),
+                      const SizedBox(height: 18),
+
+                      const VFieldLabel(text: 'Password'),
+                      const SizedBox(height: 6),
+                      LabeledField(
+                        label: '',
+                        hintText: '••••••••',
+                        controller: _passwordController,
+                        obscureText: true,
+                        validator: (v) => v == null || v.isEmpty ? 'Password is required' : null,
+                      ),
+                      const SizedBox(height: 28),
+
+                      VendorPrimaryButton(
+                        text: 'Sign in',
+                        isLoading: _isLoading,
+                        onTap: _submit,
+                      ),
+                      const SizedBox(height: 20),
+
+                      Center(
+                        child: VToggleAuthButton(
+                          message: "Don't have an account?  ",
+                          action: 'Sign up',
+                          onTap: () => context.go('/vendor/signup'),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => context.go('/vendor/signup'),
-                    child: const Text("Don't have an account? Sign up", style: TextStyle(color: AppTheme.primaryColor)),
-                  ),
-                ],
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }

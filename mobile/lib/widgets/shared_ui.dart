@@ -470,3 +470,265 @@ class _LogoutButtonState extends State<LogoutButton> {
     );
   }
 }
+
+// ── Vendor-specific shared widgets ─────────────────────────────────────────
+
+class VFieldLabel extends StatelessWidget {
+  final String text;
+  const VFieldLabel({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+        color: Color(0xFF374151),
+        letterSpacing: 0.1,
+      ),
+    );
+  }
+}
+
+class VendorPrimaryButton extends StatefulWidget {
+  final String text;
+  final bool isLoading;
+  final VoidCallback onTap;
+
+  const VendorPrimaryButton({
+    required this.text,
+    required this.isLoading,
+    required this.onTap,
+  });
+
+  @override
+  State<VendorPrimaryButton> createState() => _VendorPrimaryButtonState();
+}
+
+class _VendorPrimaryButtonState extends State<VendorPrimaryButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) {
+        setState(() => _pressed = false);
+        if (!widget.isLoading) widget.onTap();
+      },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        width: double.infinity,
+        height: 52,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: _pressed
+                ? [const Color(0xFF0F6E56), const Color(0xFF085041)]
+                : [const Color(0xFF16A34A), const Color(0xFF0F6E56)],
+          ),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: _pressed
+              ? []
+              : [
+                  BoxShadow(
+                    color: const Color(0xFF16A34A).withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+        ),
+        child: Center(
+          child: widget.isLoading
+              ? const SizedBox(
+                  width: 20, height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                )
+              : Text(
+                  widget.text,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class VToggleAuthButton extends StatefulWidget {
+  final String message;
+  final String action;
+  final VoidCallback onTap;
+
+  const VToggleAuthButton({
+    required this.message,
+    required this.action,
+    required this.onTap,
+  });
+
+  @override
+  State<VToggleAuthButton> createState() => _VToggleAuthButtonState();
+}
+
+class _VToggleAuthButtonState extends State<VToggleAuthButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 100),
+        opacity: _pressed ? 0.6 : 1.0,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+          child: RichText(
+            text: TextSpan(
+              style: const TextStyle(fontSize: 14),
+              children: [
+                TextSpan(
+                  text: widget.message,
+                  style: const TextStyle(color: Color(0xFF94A3B8)),
+                ),
+                TextSpan(
+                  text: widget.action,
+                  style: const TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.w700),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class VendorCategoryChip extends StatefulWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const VendorCategoryChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  State<VendorCategoryChip> createState() => _VendorCategoryChipState();
+}
+
+class _VendorCategoryChipState extends State<VendorCategoryChip> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 130),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: widget.selected
+              ? (_pressed ? const Color(0xFF0F6E56) : const Color(0xFF16A34A))
+              : (_pressed ? const Color(0xFFE8EDF3) : Colors.white),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: widget.selected ? const Color(0xFF16A34A) : const Color(0xFFE2E8F0),
+            width: widget.selected ? 1.5 : 1,
+          ),
+        ),
+        child: Text(
+          widget.label,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+            color: widget.selected ? Colors.white : const Color(0xFF475569),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class VSecondaryButton extends StatefulWidget {
+  final String text;
+  final VoidCallback onTap;
+  const VSecondaryButton({required this.text, required this.onTap});
+
+  @override
+  State<VSecondaryButton> createState() => _VSecondaryButtonState();
+}
+
+class _VSecondaryButtonState extends State<VSecondaryButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        height: 46,
+        decoration: BoxDecoration(
+          color: _pressed ? const Color(0xFFE8EDF3) : Colors.white,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: const Color(0xFFE2E8F0), width: 1.5),
+        ),
+        child: Center(
+          child: Text(
+            widget.text,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF374151)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class VDangerButton extends StatefulWidget {
+  final String text;
+  final VoidCallback onTap;
+  const VDangerButton({required this.text, required this.onTap});
+
+  @override
+  State<VDangerButton> createState() => _VDangerButtonState();
+}
+
+class _VDangerButtonState extends State<VDangerButton> {
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => setState(() => _pressed = true),
+      onTapUp: (_) { setState(() => _pressed = false); widget.onTap(); },
+      onTapCancel: () => setState(() => _pressed = false),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 120),
+        height: 46,
+        decoration: BoxDecoration(
+          color: _pressed ? const Color(0xFFB91C1C) : const Color(0xFFE53935),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Center(
+          child: Text(
+            widget.text,
+            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+          ),
+        ),
+      ),
+    );
+  }
+}

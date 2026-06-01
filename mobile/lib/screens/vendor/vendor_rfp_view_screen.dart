@@ -4,9 +4,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants.dart';
 import '../../services/vendor_service.dart';
-import '../../core/theme.dart';
 import '../../models/public_rfp.dart';
 import '../../utils/platform_utils.dart';
+import '../../widgets/shared_ui.dart';
 
 class VendorRfpViewScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -28,21 +28,12 @@ class _VendorRfpViewScreenState extends ConsumerState<VendorRfpViewScreen> {
   }
 
   Future<void> _fetchRfp() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    setState(() { _isLoading = true; _errorMessage = null; });
     try {
       final res = await ref.read(vendorServiceProvider).getPublicRfp(widget.jobId);
-      setState(() {
-        _rfp = res;
-        _isLoading = false;
-      });
+      setState(() { _rfp = res; _isLoading = false; });
     } catch (e) {
-      setState(() {
-        _errorMessage = e.toString();
-        _isLoading = false;
-      });
+      setState(() { _errorMessage = e.toString(); _isLoading = false; });
     }
   }
 
@@ -58,211 +49,256 @@ class _VendorRfpViewScreenState extends ConsumerState<VendorRfpViewScreen> {
     if (kIsWeb) {
       openInBrowser(fullUrl);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('URL: $fullUrl')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('URL: $fullUrl')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) return const LoadingScaffold(message: 'Loading RFP details...');
+    if (_errorMessage != null) {
+      return ErrorScaffold(title: 'RFP Details', message: _errorMessage!, onRetry: _fetchRfp);
+    }
+
+    final rfp = _rfp!;
     final isLogged = ref.watch(vendorAuthProvider) != null;
+    final bottomPadding = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF3F4F6),
-      appBar: AppBar(
-        title: const Text('RFP Details'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppTheme.accentColor.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Text('VENDOR PORTAL', style: TextStyle(color: AppTheme.accentColor, fontSize: 12, fontWeight: FontWeight.bold)),
-            ),
-          )
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: AppTheme.accentColor))
-          : _errorMessage != null
-              ? Center(child: Text('Error: $_errorMessage', style: const TextStyle(color: Colors.red)))
-              : Column(
-                  children: [
-                    Expanded(
-                      child: ListView(
-                        padding: const EdgeInsets.all(24),
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: AppTheme.primaryColor,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              'Ref: ${_rfp!.referenceId}',
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _rfp!.title,
-                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.primaryColor),
-                          ),
-                          const SizedBox(height: 16),
-                          Card(
-                            elevation: 0,
-                            color: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: Color(0xFFE5E7EB))),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                children: [
-                                  _buildMetaRow('Issuing Organization', _rfp!.issuingOrganization),
-                                  const Divider(),
-                                  _buildMetaRow('Submission Deadline', _rfp!.submissionDeadlineIso.split('T').first),
-                                  if (_rfp!.estimatedValuePkr != null) ...[
-                                    const Divider(),
-                                    _buildMetaRow('Estimated Value', 'PKR ${_rfp!.estimatedValuePkr}'),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          _buildSection('Scope of Work', _rfp!.scopeOfWork),
-                          _buildListSection('Eligibility Criteria', _rfp!.eligibilityCriteria),
-                          _buildListSection('Evaluation Criteria', _rfp!.evaluationCriteria),
-                          _buildListSection('Mandatory PPRA Clauses', _rfp!.mandatoryClauses),
-                          
-                          const SizedBox(height: 16),
-                          const Text('Contact Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
-                          const SizedBox(height: 8),
-                          Card(
-                            elevation: 0,
-                            color: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: Color(0xFFE5E7EB))),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                children: [
-                                  _buildMetaRow('Name', _rfp!.contactInfo['name'] ?? ''),
-                                  const Divider(),
-                                  _buildMetaRow('Email', _rfp!.contactInfo['email'] ?? ''),
-                                  const Divider(),
-                                  _buildMetaRow('Phone', _rfp!.contactInfo['phone'] ?? ''),
-                                ],
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 40),
-                        ],
+      backgroundColor: const Color(0xFFF8F9FB),
+      appBar: StyledAppBar(title: 'RFP Details'),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.fromLTRB(16, 16, 16, bottomPadding + 120),
+              child: Column(
+                children: [
+
+                  // Hero header
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Color(0xFF16A34A), Color(0xFF0A2918)],
                       ),
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(color: Colors.black.withOpacity(0.05), offset: const Offset(0, -4), blurRadius: 10),
-                        ],
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'VENDOR PORTAL',
+                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 1.0),
+                              ),
+                            ),
+                            const Spacer(),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: const Text(
+                                'PPRA ALIGNED',
+                                style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 14),
+                        Text(
+                          rfp.title,
+                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white, height: 1.2),
+                        ),
+                        const SizedBox(height: 10),
+                        Row(
+                          children: [
+                            const Icon(Icons.tag_rounded, size: 13, color: Colors.white54),
+                            const SizedBox(width: 4),
+                            Expanded(
+                              child: Text(
+                                rfp.referenceId,
+                                style: const TextStyle(fontSize: 12, color: Colors.white60, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Meta info card
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: const Color(0xFFE8EDF3)),
+                    ),
+                    child: Column(
+                      children: [
+                        _MetaRow(
+                          icon: Icons.domain_outlined,
+                          label: 'Issuing organisation',
+                          value: rfp.issuingOrganization,
+                          isLast: false,
+                        ),
+                        _MetaRow(
+                          icon: Icons.event_outlined,
+                          label: 'Submission deadline',
+                          value: rfp.submissionDeadlineIso.split('T').first,
+                          isLast: rfp.estimatedValuePkr == null,
+                        ),
+                        if (rfp.estimatedValuePkr != null)
+                          _MetaRow(
+                            icon: Icons.payments_outlined,
+                            label: 'Estimated value',
+                            value: 'PKR ${rfp.estimatedValuePkr}',
+                            isLast: true,
+                          ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  // Scope
+                  ExpandableSection(
+                    title: 'Scope of work',
+                    icon: Icons.assignment_outlined,
+                    initiallyExpanded: true,
+                    child: Text(
+                      rfp.scopeOfWork,
+                      style: const TextStyle(fontSize: 13, color: Color(0xFF374151), height: 1.5),
+                    ),
+                  ),
+
+                  if (rfp.eligibilityCriteria.isNotEmpty)
+                    ExpandableSection(
+                      title: 'Eligibility criteria',
+                      icon: Icons.verified_user_outlined,
                       child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          if (isLogged)
-                            SizedBox(
-                              width: double.infinity,
-                              height: 48,
-                              child: ElevatedButton(
-                                onPressed: () => context.go('/vendor/respond/${widget.jobId}'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.accentColor,
-                                  foregroundColor: Colors.white,
-                                ),
-                                child: const Text('Submit Bid Response', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                              ),
-                            )
-                          else
-                            SizedBox(
-                              width: double.infinity,
-                              height: 48,
-                              child: ElevatedButton(
-                                onPressed: () => context.go('/vendor/login?return_to=/vendor/rfp/${widget.jobId}'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppTheme.primaryColor,
-                                  foregroundColor: Colors.white,
-                                ),
-                                child: const Text('Sign in to submit response', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                              ),
-                            ),
-                          const SizedBox(height: 12),
-                          SizedBox(
-                            width: double.infinity,
-                            height: 48,
-                            child: OutlinedButton(
-                              onPressed: _downloadPdf,
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: AppTheme.primaryColor,
-                                side: const BorderSide(color: AppTheme.primaryColor),
-                              ),
-                              child: const Text('Download Full RFP PDF', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            ),
-                          ),
-                        ],
+                        children: rfp.eligibilityCriteria.map((e) => BulletPoint(text: e)).toList(),
                       ),
                     ),
-                  ],
-                ),
-    );
-  }
 
-  Widget _buildMetaRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label, style: const TextStyle(color: Color(0xFF6B7280))),
-        Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
-      ],
-    );
-  }
+                  if (rfp.evaluationCriteria.isNotEmpty)
+                    ExpandableSection(
+                      title: 'Evaluation criteria',
+                      icon: Icons.assessment_outlined,
+                      child: Column(
+                        children: rfp.evaluationCriteria.map((e) => BulletPoint(text: e)).toList(),
+                      ),
+                    ),
 
-  Widget _buildSection(String title, String body) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
-          const SizedBox(height: 8),
-          Text(body, style: const TextStyle(height: 1.5, color: Color(0xFF374151))),
+                  if (rfp.mandatoryClauses.isNotEmpty)
+                    ExpandableSection(
+                      title: 'Mandatory PPRA clauses',
+                      icon: Icons.gavel_outlined,
+                      child: Column(
+                        children: rfp.mandatoryClauses.map((e) => BulletPoint(text: e)).toList(),
+                      ),
+                    ),
+
+                  ExpandableSection(
+                    title: 'Contact information',
+                    icon: Icons.contact_mail_outlined,
+                    child: Column(
+                      children: [
+                        InfoRow('Name', rfp.contactInfo['name'] ?? 'N/A'),
+                        InfoRow('Email', rfp.contactInfo['email'] ?? 'N/A'),
+                        InfoRow('Phone', rfp.contactInfo['phone'] ?? 'N/A'),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
+      ),
+
+      // Sticky bottom actions
+      bottomNavigationBar: Container(
+        padding: EdgeInsets.fromLTRB(16, 12, 16, bottomPadding + 12),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Color(0xFFE8EDF3))),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (isLogged)
+              VendorPrimaryButton(
+                text: 'Submit bid response',
+                isLoading: false,
+                onTap: () => context.go('/vendor/respond/${widget.jobId}'),
+              )
+            else
+              VendorPrimaryButton(
+                text: 'Sign in to submit response',
+                isLoading: false,
+                onTap: () => context.go('/vendor/login?return_to=/vendor/rfp/${widget.jobId}'),
+              ),
+            const SizedBox(height: 10),
+            SecondaryActionButton(
+              text: 'Download full RFP PDF',
+              onTap: _downloadPdf,
+              icon: Icons.download_outlined,
+            ),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildListSection(String title, List<String> items) {
-    if (items.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+class _MetaRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final bool isLast;
+
+  const _MetaRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+    required this.isLast,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
+      decoration: isLast
+          ? null
+          : const BoxDecoration(border: Border(bottom: BorderSide(color: Color(0xFFE8EDF3)))),
+      child: Row(
         children: [
-          Text(title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppTheme.primaryColor)),
-          const SizedBox(height: 8),
-          ...items.map((e) => Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('• ', style: TextStyle(fontSize: 16, color: Color(0xFF374151))),
-                Expanded(child: Text(e, style: const TextStyle(height: 1.5, color: Color(0xFF374151)))),
-              ],
+          Icon(icon, size: 16, color: const Color(0xFF94A3B8)),
+          const SizedBox(width: 10),
+          Text(label, style: const TextStyle(fontSize: 13, color: Color(0xFF64748B))),
+          const Spacer(),
+          Flexible(
+            child: Text(
+              value,
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF0F172A)),
             ),
-          )),
+          ),
         ],
       ),
     );
