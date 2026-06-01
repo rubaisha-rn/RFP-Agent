@@ -1,10 +1,12 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../core/constants.dart';
 import '../../services/vendor_service.dart';
 import '../../core/theme.dart';
 import '../../models/public_rfp.dart';
+import '../../utils/platform_utils.dart';
 
 class VendorRfpViewScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -44,16 +46,21 @@ class _VendorRfpViewScreenState extends ConsumerState<VendorRfpViewScreen> {
     }
   }
 
-  Future<void> _downloadPdf() async {
-    if (_rfp?.pdfDownloadUrl != null) {
-      final url = Uri.parse(_rfp!.pdfDownloadUrl);
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Could not open PDF')));
-        }
-      }
+  void _downloadPdf() {
+    final pdfPath = _rfp?.pdfDownloadUrl ?? '';
+    if (pdfPath.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No PDF available.')),
+      );
+      return;
+    }
+    final fullUrl = '${ApiConstants.baseUrl}$pdfPath';
+    if (kIsWeb) {
+      openInBrowser(fullUrl);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('URL: $fullUrl')),
+      );
     }
   }
 

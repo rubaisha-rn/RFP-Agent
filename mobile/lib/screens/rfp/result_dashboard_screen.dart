@@ -432,7 +432,7 @@ class _ResultDashboardScreenState extends ConsumerState<ResultDashboardScreen> {
                   icon: Icons.description_outlined,
                   color: const Color(0xFF1E3A8A),
                   title: 'RFP document',
-                  subtitle: document != null ? document.filePath.split('/').last : 'Not generated',
+                  subtitle: document != null ? 'Production-grade PPRA RFP · Ready to download' : 'Not generated',
                   action: document != null ? 'Download PDF' : null,
                   onAction: document != null ? _downloadPdf : null,
                 ),
