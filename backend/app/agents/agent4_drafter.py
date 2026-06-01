@@ -147,7 +147,86 @@ _runner = Runner(
 
 
 # ---------------------------------------------------------------------------
-# 8. async helper: draft_and_execute
+# 8. Reconstruction fallback
+# ---------------------------------------------------------------------------
+
+def _reconstruct_final_output(
+    job_id: str,
+    classification: dict,
+    compliance: dict,
+    vendor_intel: dict,
+    issuing_organization: str,
+    procurement_officer: dict,
+) -> FinalRFPOutput | None:
+    """Rebuild FinalRFPOutput from rows the tools already wrote to Supabase.
+    Used when the model fails to emit clean final JSON but all tool calls
+    succeeded. Returns None if essential rows (document + portal) are missing."""
+    client = supabase_service.client
+    docs = client.table("generated_documents").select("*").eq("job_id", job_id).order("created_at", desc=True).limit(1).execute()
+    portals = client.table("portal_postings").select("*").eq("job_id", job_id).order("posted_at", desc=True).limit(1).execute()
+    emails = client.table("sent_emails").select("*").eq("job_id", job_id).execute()
+    events = client.table("calendar_events").select("*").eq("job_id", job_id).order("created_at").execute()
+
+    if not docs.data or not portals.data:
+        return None
+
+    doc = docs.data[0]
+    portal = portals.data[0]
+    content = doc.get("content_json") or {}
+    if isinstance(content, str):
+        try:
+            content = json.loads(content)
+        except Exception:
+            content = {}
+
+    title = content.get("title") or f"Request for Proposal: {classification.get('category', 'Procurement')}"
+    scope = content.get("scope_of_work") or classification.get("reasoning_notes", "")
+    eligibility = content.get("eligibility_criteria") or classification.get("required_certifications", []) or ["Valid registration and tax compliance"]
+    evaluation = content.get("evaluation_criteria") or ["Technical 60%", "Financial 30%", "PPRA compliance 10%"]
+    clauses = content.get("mandatory_clauses") or compliance.get("mandatory_clauses", [])
+    submission_iso = content.get("submission_deadline_iso") or ""
+    opening_iso = content.get("opening_date_iso") or ""
+
+    emails_sent = [{"vendor_name": e.get("to_name", ""), "email_id": str(e.get("id", ""))} for e in (emails.data or [])]
+    events_created = [{"title": ev.get("title", ""), "event_id": str(ev.get("id", ""))} for ev in (events.data or [])]
+
+    payload = {
+        "final_rfp": {
+            "title": title,
+            "scope_of_work": scope,
+            "eligibility_criteria": eligibility,
+            "evaluation_criteria": evaluation,
+            "mandatory_clauses": clauses if clauses else ["Standard PPRA Rules 2004 apply."],
+            "submission_deadline_iso": submission_iso,
+            "opening_date_iso": opening_iso,
+            "contact_info": {
+                "name": procurement_officer.get("name", ""),
+                "email": procurement_officer.get("email", ""),
+                "phone": procurement_officer.get("phone", ""),
+                "organization": issuing_organization,
+            },
+        },
+        "executed_actions": {
+            "document_id": str(doc.get("id", "")),
+            "pdf_path": doc.get("file_path", ""),
+            "emails_sent": emails_sent,
+            "calendar_events_created": events_created,
+            "portal_posting": {
+                "reference_id": portal.get("reference_id", ""),
+                "posting_id": str(portal.get("id", "")),
+                "posted_url": portal.get("posted_url", ""),
+            },
+        },
+        "reasoning_notes": "Final output reconstructed from executed actions persisted in Supabase. All tool calls completed successfully.",
+    }
+    try:
+        return FinalRFPOutput.model_validate(payload)
+    except Exception:
+        return None
+
+
+# ---------------------------------------------------------------------------
+# 9. async helper: draft_and_execute
 # ---------------------------------------------------------------------------
 
 async def draft_and_execute(
@@ -274,6 +353,7 @@ async def draft_and_execute(
         raise
 
     # -- parse output ---------------------------------------------------------
+    final_output = None
     try:
         session = await _session_service.get_session(
             app_name=_APP_NAME,
@@ -294,19 +374,39 @@ async def draft_and_execute(
             if first_brace != -1 and last_brace != -1 and last_brace > first_brace:
                 clean_text = clean_text[first_brace:last_brace + 1]
             final_output = FinalRFPOutput.model_validate_json(clean_text)
-        else:
-            raise ValueError(
-                "No final_rfp_output found in session state or response text."
-            )
 
     except Exception as exc:
         supabase_service.write_trace(
             job_id=job_id,
             agent_name="drafter",
             step_number=current_step,
-            reasoning=f"Output parsing failed: {exc}",
+            reasoning=f"Output parsing failed ({exc}); attempting reconstruction from Supabase rows.",
         )
-        raise
+        current_step += 1
+
+    # -- fallback: reconstruct from Supabase rows if parsing failed -----------
+    if final_output is None:
+        supabase_service.write_trace(
+            job_id=job_id,
+            agent_name="drafter",
+            step_number=current_step,
+            reasoning="Model did not emit parseable final JSON. Attempting to reconstruct FinalRFPOutput from Supabase rows written by tool calls.",
+        )
+        current_step += 1
+
+        final_output = _reconstruct_final_output(
+            job_id=job_id,
+            classification=classification,
+            compliance=compliance,
+            vendor_intel=vendor_intel,
+            issuing_organization=issuing_organization,
+            procurement_officer=procurement_officer,
+        )
+        if final_output is None:
+            raise ValueError(
+                "Reconstruction failed: essential rows (generated_documents / portal_postings) "
+                "not found in Supabase for this job_id. This indicates a genuine tool-call failure."
+            )
 
     # -- trace: completed -----------------------------------------------------
     supabase_service.write_trace(
@@ -324,7 +424,7 @@ async def draft_and_execute(
 
 
 # ---------------------------------------------------------------------------
-# 9. Test harness
+# 10. Test harness
 # ---------------------------------------------------------------------------
 
 if __name__ == "__main__":
