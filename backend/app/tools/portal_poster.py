@@ -19,7 +19,7 @@ def post_to_portal(
     today = datetime.utcnow()
     token = secrets.token_hex(3).upper()
     reference_id = f"PPRA-{today.year}-{today.month:02d}{today.day:02d}-{token}"
-    posted_url = f"https://eprocure.ppra.org.pk/tenders/{reference_id}"
+    posted_url = f"https://rfp-agent-system.netlify.app/#/vendor/rfp/{job_id}"
 
     row = supabase_service.save_portal_posting(
         job_id=job_id,
