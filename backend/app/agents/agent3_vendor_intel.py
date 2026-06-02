@@ -224,10 +224,8 @@ async def rank_vendors(job_id: str, classification: dict, compliance: dict) -> V
                         )
                         current_step += 1
 
-            if event.is_final_response():
-                if event.content and event.content.parts:
-                    final_response_text = event.content.parts[0].text
-                break
+                    if hasattr(part, "text") and part.text:
+                        final_response_text = part.text
 
     except Exception as exc:
         supabase_service.write_trace(

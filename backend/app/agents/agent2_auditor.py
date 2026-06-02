@@ -224,11 +224,8 @@ async def audit_classification(job_id: str, classification: dict) -> ComplianceO
                         )
                         current_step += 1
 
-            # -- capture final text -------------------------------------------
-            if event.is_final_response():
-                if event.content and event.content.parts:
-                    final_response_text = event.content.parts[0].text
-                break
+                    if hasattr(part, "text") and part.text:
+                                final_response_text = part.text
 
     except Exception as exc:
         supabase_service.write_trace(

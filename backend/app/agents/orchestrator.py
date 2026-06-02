@@ -19,7 +19,7 @@ from app.agents.agent4_drafter import draft_and_execute
 
 logger = logging.getLogger(__name__)
 
-PIPELINE_PACING_SECONDS = 60
+PIPELINE_PACING_SECONDS = 5
 
 async def kick_off_pipeline(brief: str, organization_id: str | None = None) -> str:
     """Create a job in Supabase then return the job_id immediately so the API can return without blocking.

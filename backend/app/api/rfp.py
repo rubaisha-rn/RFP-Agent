@@ -9,6 +9,10 @@ from app.services.job_manager import get_job_status, get_job_full
 
 router = APIRouter()
 
+# Strong references to background pipeline tasks.
+# Prevents garbage collection from killing tasks mid-execution.
+_running_tasks: set[asyncio.Task] = set()
+
 
 class GenerateRequest(BaseModel):
     brief: str
@@ -30,8 +34,14 @@ async def generate_rfp(req: GenerateRequest):
         )
     job_id = await kick_off_pipeline(req.brief, req.organization_id)
 
-    # Use asyncio.create_task instead of BackgroundTasks to ensure proper async background execution alongside the ADK agents
-    asyncio.create_task(run_pipeline(job_id, req.brief, req.organization_id))
+    # Create the task AND keep a strong reference to it
+    task = asyncio.create_task(
+        run_pipeline(job_id, req.brief, req.organization_id)
+    )
+    _running_tasks.add(task)
+
+    # Remove from set automatically when done so memory doesn't grow forever
+    task.add_done_callback(_running_tasks.discard)
 
     return GenerateResponse(
         job_id=job_id,

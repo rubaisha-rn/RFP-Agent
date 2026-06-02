@@ -291,6 +291,7 @@ async def draft_and_execute(
     )
 
     # -- run the agent, collect events ----------------------------------------
+    # -- run the agent, collect events ----------------------------------------
     final_response_text: str | None = None
     try:
         async for event in _runner.run_async(
@@ -315,8 +316,7 @@ async def draft_and_execute(
                         raw_resp = part.function_response.response
                         if not isinstance(raw_resp, dict):
                             raw_resp = {"result": str(raw_resp)}
-                            
-                        # Truncate tool_output for specific traces
+
                         if part.function_response.name == "save_document_record":
                             trace_output = {"document_id": raw_resp.get("document_id")}
                         elif part.function_response.name == "send_invitation_email":
@@ -338,10 +338,13 @@ async def draft_and_execute(
                         )
                         current_step += 1
 
-            if event.is_final_response():
-                if event.content and event.content.parts:
-                    final_response_text = event.content.parts[0].text
-                break
+                    # Capture text from any part — overwrite each time
+                    # so we end up with the last/final text
+                    if hasattr(part, "text") and part.text:
+                        final_response_text = part.text
+
+            # Do NOT break here — let the generator exhaust naturally
+            # so all tool calls complete before we try to parse output
 
     except Exception as exc:
         supabase_service.write_trace(
