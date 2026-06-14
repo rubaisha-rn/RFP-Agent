@@ -53,7 +53,7 @@ All agents run on **Google Gemini 2.5 Flash** via Google ADK. Every `function_ca
 A single successful run produces:
 - 1 generated PDF document
 - ~5 vendor invitation emails sent
-- 3 calendar events scheduled (submission deadline, opening date, evaluation date)
+- ~3 calendar events scheduled (submission deadline, opening date, evaluation date)
 - 1 portal posting published
 - ~50 agent trace records across 4 agents
 
