@@ -12,8 +12,8 @@
 |---|---|
 | 🌐 Live Web App (Netlify) | https://rfp-agent-system.netlify.app |
 | ⚙️ Live Backend API (Swagger) | https://rfp-agent-system-production.up.railway.app/docs |
-| 📦 Source Code (GitHub) | https://github.com/dina-khan/rfp-agent-system |
-| 📱 Android APK | 📱 Android APK [Download v1.0.0 release](https://github.com/dina-khan/rfp-agent-system/releases/tag/v1.0.0) |
+| 📦 Source Code (GitHub) | https://github.com/rubaisha-rn/RFP-Agent |
+| 📱 Android APK | 📱 Android APK [Download v2.0.0 release](https://github.com/rubaisha-rn/RFP-Agent/releases/tag/v2.0.0) |
 | 🎥 Demo Video (3-5 min) | (https://drive.google.com/file/d/1puNylBzz8V34rTmtBmM9USeBVLSTenG5/view) |
 | 🎥 Full Length Demo Video (6 min) | (https://drive.google.com/file/d/1ryyxWm20nss2jLFrLudf68jLnb0Oanoz/view?usp=drive_link) |
 | 🤖 Antigravity Usage Video | (https://drive.google.com/file/d/1U5-3ag_L_e50FqCmb0HoIpDwSlFaoNd_/view?usp=sharing) |
@@ -52,7 +52,7 @@ The easiest way to test the system is to use our live web application.
 
 ### 📱 Android APK
 You can also run the app natively on any Android device.
-1. Download [`releases/rfp_agent_system.apk`](https://github.com/dina-khan/rfp-agent-system/releases/tag/v1.0.0) from this repository.
+1. Download [`releases/rfp_agent_system.apk`](https://github.com/rubaisha-rn/RFP-Agent/releases/tag/v2.0.0) from this repository.
 2. Transfer it to your Android device and install it (you may need to allow "Install from Unknown Sources").
 3. Launch **RFP Agent** and follow the same steps to generate your RFP.
 
@@ -65,8 +65,8 @@ To test the FastAPI backend and see the agents running in your terminal:
 
 1. **Clone & Setup:**
 ```bash
-git clone https://github.com/dina-khan/rfp-agent-system.git
-cd rfp-agent-system/backend
+git clone https://github.com/rubaisha-rn/RFP-Agent.git
+cd RFP-agent/backend
 python -m venv .venv
 .venv\Scripts\Activate.ps1   # Windows
 # source .venv/bin/activate  # macOS / Linux
@@ -130,7 +130,7 @@ http://localhost:8000
 ## 📁 Repository Structure
 
 ```text
-rfp-agent-system/
+RFP-agent/
 ├── backend/                          # FastAPI + Google ADK
 │   ├── app/
 │   │   ├── agents/                   # The 4 Gemini 2.5 Flash agents
