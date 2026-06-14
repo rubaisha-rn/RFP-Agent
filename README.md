@@ -194,4 +194,4 @@ The reasoning trace audit — per-agent tabs showing every tool call and decisio
 
 ## Contributors
 
-Built by Noor Fatime, [Dina Khan](https://github.com/dina-khan), and [Rubaisha Nadeem](https://github.com/rubaisha-rn).
+Built by Noor Fatima, [Dina Khan](https://github.com/dina-khan), and [Rubaisha Nadeem](https://github.com/rubaisha-rn).
