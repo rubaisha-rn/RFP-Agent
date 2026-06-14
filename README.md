@@ -91,9 +91,6 @@ RFP-agent/
 │   │   └── widgets/         # Reusable components
 │   └── pubspec.yaml
 │
-├── releases/
-│   └── rfp_agent_app.apk    # Compiled Android APK
-│
 ├── ARCHITECTURE.md
 └── README.md
 ```
