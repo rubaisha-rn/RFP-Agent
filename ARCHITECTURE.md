@@ -13,7 +13,7 @@ The RFP Agent System is a full-stack, multi-agent application that automates the
 | **Framework** | Flutter 3.41+ |
 | **State management** | Riverpod 2.5 |
 | **Routing** | GoRouter 14.2 |
-| **Platforms** | Web (primary) · Android APK (secondary) |
+| **Platforms** | Android APK (primary) · Web (secondary) |
 
 The frontend polls the backend every 2 seconds via `Timer.periodic` + `StreamController` against `/rfp/status/{job_id}`, updating the agent progress UI in real time. Each agent's status (pending / running / done) and a climbing reasoning trace count are surfaced directly — no generic loading state.
 
