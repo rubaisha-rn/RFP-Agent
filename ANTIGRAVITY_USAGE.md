@@ -1,8 +1,10 @@
-# 🚀 Antigravity Usage
+# Antigravity Usage
 
 The RFP Agent System was built entirely inside the **Google Antigravity IDE**. This document highlights how Antigravity was leveraged to build, debug, and deploy the application in under 3 days, providing a detailed audit trail of autonomous behaviours and task-driven development.
 
-## 📂 Artifacts Overview
+---
+
+## Artifacts Overview
 All evidence of Antigravity's workflow is persisted in the `antigravity_artifacts/` directory. This includes:
 - **Workplans**: Strategic breakdown of implementation steps.
 - **Reasoning Traces**: Insights into Antigravity's autonomous decisions.
@@ -10,7 +12,9 @@ All evidence of Antigravity's workflow is persisted in the `antigravity_artifact
 - **Walkthroughs**: Narrative logs with screenshots of the agent interacting with the app.
 - **Screenshots**: Over 50 visual checkpoints capturing IDE state, terminal output, and UI progression.
 
-## 🛠️ Build Phases - Task-by-Task Breakdown
+---
+
+## Build Phases - Task-by-Task Breakdown
 
 ### Task 1 — Initial Setup & Verification
 - **Goal**: Validate the IDE-as-agent workflow.
@@ -49,5 +53,6 @@ All evidence of Antigravity's workflow is persisted in the `antigravity_artifact
 - **Goal**: Build the core UI, progress polling, and audit trail dashboard.
 - **Outcome**: Delivered a real-time polling UI. **Autonomous behavior**: Encountered a port 5000 conflict. Antigravity ran PowerShell diagnostics (`Get-NetTCPConnection`, `Get-Process`, `Stop-Process`), cleared the stale Flutter process, re-launched the app, and resolved a null-safety bug dynamically.
 
-## 🌟 Key Takeaways
+---
+
 Antigravity operated not just as an assistant, but as an **autonomous developer**. Its ability to run diagnostics, navigate closed-loop debugging cycles, use a headless browser for QA, and capture its own progress allowed the team to focus entirely on architecture and product design.
