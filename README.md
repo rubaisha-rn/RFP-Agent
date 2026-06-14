@@ -62,7 +62,6 @@ A single successful run produces:
 | Layer | Technology |
 |---|---|
 | Mobile frontend | Flutter · Dart · Riverpod · GoRouter |
-| Web frontend | Netlify |
 | Backend | FastAPI · Python · Google ADK · Google Gemini 2.5 Flash |
 | Database & auth | Supabase · PostgreSQL |
 | Deployment | Railway (backend) · Netlify (web) |
